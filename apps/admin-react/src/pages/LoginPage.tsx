@@ -1,0 +1,40 @@
+import { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../state/AuthProvider";
+
+export function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("editor@example.com");
+  const [password, setPassword] = useState("Editor123!");
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await login({ email, password });
+      navigate("/");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Login failed.");
+    }
+  }
+
+  return (
+    <section className="panel page-card">
+      <div className="eyebrow">Admin sign in</div>
+      <h2>Internal operator shell with reusable data-management patterns.</h2>
+      <form className="form-grid" onSubmit={onSubmit}>
+        <label className="field">
+          <span>Email</span>
+          <input value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label className="field">
+          <span>Password</span>
+          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+        {error && <p className="error-text">{error}</p>}
+        <button className="btn btn-primary" type="submit">Enter admin</button>
+      </form>
+    </section>
+  );
+}

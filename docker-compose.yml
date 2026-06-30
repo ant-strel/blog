@@ -1,0 +1,58 @@
+services:
+  auth-api:
+    build:
+      context: .
+      dockerfile: apps/api-dotnet/Dockerfile
+    ports:
+      - "7067:8080"
+
+  blog-api:
+    build:
+      context: .
+      dockerfile: apps/blog-api-dotnet/Dockerfile
+    ports:
+      - "7071:8080"
+
+  public-site:
+    build:
+      context: .
+      dockerfile: apps/public-site-react/Dockerfile
+      args:
+        VITE_BLOG_API_BASE_URL: http://localhost:7071
+        VITE_BLOG_MODE: api
+    ports:
+      - "8080:80"
+    depends_on:
+      - blog-api
+
+  admin-site:
+    build:
+      context: .
+      dockerfile: apps/admin-react/Dockerfile
+      args:
+        VITE_AUTH_API_BASE_URL: http://localhost:7067
+        VITE_BLOG_API_BASE_URL: http://localhost:7071
+        VITE_DASHBOARD_API_BASE_URL: http://localhost:7067
+        VITE_AUTH_MODE: api
+        VITE_BLOG_MODE: api
+        VITE_DASHBOARD_MODE: api
+    ports:
+      - "8081:80"
+    depends_on:
+      - auth-api
+      - blog-api
+
+  account-site:
+    build:
+      context: .
+      dockerfile: apps/account-react/Dockerfile
+      args:
+        VITE_AUTH_API_BASE_URL: http://localhost:7067
+        VITE_BLOG_API_BASE_URL: http://localhost:7071
+        VITE_AUTH_MODE: api
+        VITE_BLOG_MODE: api
+    ports:
+      - "8082:80"
+    depends_on:
+      - auth-api
+      - blog-api
