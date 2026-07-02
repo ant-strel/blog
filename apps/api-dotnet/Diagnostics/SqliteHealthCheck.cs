@@ -3,11 +3,11 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace AuthServer.Api.Diagnostics;
 
-public class SqliteHealthCheck : IHealthCheck
+public class DatabaseHealthCheck : IHealthCheck
 {
     private readonly AppDbContext _dbContext;
 
-    public SqliteHealthCheck(AppDbContext dbContext)
+    public DatabaseHealthCheck(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -16,7 +16,12 @@ public class SqliteHealthCheck : IHealthCheck
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        await Task.Yield();
+        var canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);
+        if (!canConnect)
+        {
+            return HealthCheckResult.Unhealthy("Database is unavailable.");
+        }
+
         var providerName = _dbContext.Database.ProviderName ?? "unknown";
         return HealthCheckResult.Healthy($"Database provider is {providerName}.");
     }

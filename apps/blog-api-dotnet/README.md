@@ -14,7 +14,8 @@ Current scope:
 - public `GET /api/blog/{slug}`
 - protected `GET/POST/PUT/DELETE /api/admin/blog/articles`
 - protected publish/archive transitions
-- in-memory persistence for local first-slice work
+- SQLite by default for local runs
+- PostgreSQL in Docker Compose for persistent deployment storage
 
 Default local URL:
 

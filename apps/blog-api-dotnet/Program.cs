@@ -24,6 +24,9 @@ builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOpt
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt settings were not found.");
+var databaseProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured.");
 
 if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
 {
@@ -32,7 +35,18 @@ if (string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
 
 builder.Services.AddDbContext<BlogDbContext>(options =>
 {
-    options.UseInMemoryDatabase("BlogApi");
+    switch (databaseProvider.ToLowerInvariant())
+    {
+        case "postgres":
+        case "postgresql":
+            options.UseNpgsql(connectionString);
+            break;
+        case "sqlite":
+            options.UseSqlite(connectionString);
+            break;
+        default:
+            throw new InvalidOperationException($"Unsupported database provider '{databaseProvider}'.");
+    }
 });
 
 builder.Services

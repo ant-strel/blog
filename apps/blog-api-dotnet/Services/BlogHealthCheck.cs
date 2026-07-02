@@ -1,4 +1,5 @@
 using Blog.Api.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Blog.Api.Services;
@@ -12,11 +13,17 @@ public class BlogHealthCheck : IHealthCheck
         _dbContext = dbContext;
     }
 
-    public Task<HealthCheckResult> CheckHealthAsync(
+    public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        var count = _dbContext.Articles.Count();
-        return Task.FromResult(HealthCheckResult.Healthy($"Blog store ready. Seeded articles: {count}."));
+        var canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);
+        if (!canConnect)
+        {
+            return HealthCheckResult.Unhealthy("Blog database is unavailable.");
+        }
+
+        var count = await _dbContext.Articles.CountAsync(cancellationToken);
+        return HealthCheckResult.Healthy($"Blog store ready. Seeded articles: {count}.");
     }
 }

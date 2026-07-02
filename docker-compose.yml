@@ -1,18 +1,78 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform-dev-password}
+      POSTGRES_DB: postgres
+      POSTGRES_AUTH_DB: ${POSTGRES_AUTH_DB:-authdb}
+      POSTGRES_BLOG_DB: ${POSTGRES_BLOG_DB:-blogdb}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./ops/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platform} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   auth-api:
     build:
       context: .
       dockerfile: apps/api-dotnet/Dockerfile
+    environment:
+      Database__Provider: Postgres
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_AUTH_DB:-authdb};Username=${POSTGRES_USER:-platform};Password=${POSTGRES_PASSWORD:-platform-dev-password}
     expose:
       - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   blog-api:
     build:
       context: .
       dockerfile: apps/blog-api-dotnet/Dockerfile
+    environment:
+      Database__Provider: Postgres
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_BLOG_DB:-blogdb};Username=${POSTGRES_USER:-platform};Password=${POSTGRES_PASSWORD:-platform-dev-password}
     expose:
       - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres-backup:
+    build:
+      context: .
+      dockerfile: ops/postgres/backup/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform-dev-password}
+      POSTGRES_DATABASES: ${POSTGRES_AUTH_DB:-authdb} ${POSTGRES_BLOG_DB:-blogdb}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_LOCAL_RETENTION_DAYS: ${BACKUP_LOCAL_RETENTION_DAYS:-14}
+      BACKUP_REMOTE_RETENTION_DAYS: ${BACKUP_REMOTE_RETENTION_DAYS:-30}
+      BACKUP_DIR: /backups
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-postgres}
+      BACKUP_S3_REGION: ${BACKUP_S3_REGION}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT}
+      BACKUP_S3_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID}
+      BACKUP_S3_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY}
+    volumes:
+      - postgres-backups:/backups
+      - ./ops/postgres/backup/pg-backup.sh:/scripts/pg-backup.sh:ro
+      - ./ops/postgres/backup/restore-from-backup.sh:/scripts/restore-from-backup.sh:ro
+    command: ["bash", "/scripts/pg-backup.sh"]
     restart: unless-stopped
 
   public-site:
@@ -76,3 +136,7 @@ services:
     depends_on:
       - auth-api
     restart: unless-stopped
+
+volumes:
+  postgres-data:
+  postgres-backups:
