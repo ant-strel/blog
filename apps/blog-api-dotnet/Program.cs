@@ -137,7 +137,7 @@ app.MapHealthChecks("/health");
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    await dbContext.Database.MigrateAsync();
 
     var seeder = scope.ServiceProvider.GetRequiredService<IBlogSeeder>();
     await seeder.SeedAsync();
