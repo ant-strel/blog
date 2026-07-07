@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+POSTGRES_USER="${POSTGRES_USER:-platform}"
+POSTGRES_AUTH_DB="${POSTGRES_AUTH_DB:-authdb}"
+POSTGRES_BLOG_DB="${POSTGRES_BLOG_DB:-blogdb}"
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<-SQL
+  SELECT 'CREATE DATABASE "${POSTGRES_AUTH_DB}"'
+  WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${POSTGRES_AUTH_DB}')\gexec
+
+  SELECT 'CREATE DATABASE "${POSTGRES_BLOG_DB}"'
+  WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${POSTGRES_BLOG_DB}')\gexec
+SQL

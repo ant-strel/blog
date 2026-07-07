@@ -1,0 +1,1 @@
+-- Replaced by 01-create-app-databases.sh so database names can come from env.

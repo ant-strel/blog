@@ -1,0 +1,9 @@
+{
+  "name": "@template/design-system",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./styles.css": "./src/styles.css"
+  }
+}

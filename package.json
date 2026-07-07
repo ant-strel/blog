@@ -1,0 +1,18 @@
+{
+  "name": "template-project",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @template/public-site-react && npm run build --workspace @template/account-react && npm run build --workspace @template/admin-react && npm run build --workspace @template/dashboard-react",
+    "dev:api": "dotnet run --project apps/api-dotnet/AuthServer.Api.csproj --urls http://127.0.0.1:7067",
+    "dev:blog-api": "dotnet run --project apps/blog-api-dotnet/Blog.Api.csproj --urls http://127.0.0.1:7071",
+    "dev:public": "npm run dev --workspace @template/public-site-react",
+    "dev:account": "npm run dev --workspace @template/account-react",
+    "dev:admin": "npm run dev --workspace @template/admin-react",
+    "dev:dashboard": "npm run dev --workspace @template/dashboard-react"
+  }
+}

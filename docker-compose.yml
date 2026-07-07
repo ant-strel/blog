@@ -1,0 +1,159 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform-dev-password}
+      POSTGRES_DB: postgres
+      POSTGRES_AUTH_DB: ${POSTGRES_AUTH_DB:-authdb}
+      POSTGRES_BLOG_DB: ${POSTGRES_BLOG_DB:-blogdb}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./ops/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platform} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  auth-api:
+    build:
+      context: .
+      dockerfile: apps/api-dotnet/Dockerfile
+    environment:
+      Database__Provider: Postgres
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_AUTH_DB:-authdb};Username=${POSTGRES_USER:-platform};Password=${POSTGRES_PASSWORD:-platform-dev-password}
+      Jwt__Issuer: ${JWT_ISSUER:-TemplateProject.AuthServer}
+      Jwt__Audience: ${JWT_AUDIENCE:-TemplateProject.Frontends}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-local-dev-secret-change-me-please-1234567890}
+      Seed__EditorEmail: ${SEED_EDITOR_EMAIL:-editor@example.com}
+      Seed__EditorPassword: ${SEED_EDITOR_PASSWORD:-Editor123!}
+      Seed__EditorFirstName: ${SEED_EDITOR_FIRST_NAME:-Editorial}
+      Seed__EditorLastName: ${SEED_EDITOR_LAST_NAME:-Owner}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  blog-api:
+    build:
+      context: .
+      dockerfile: apps/blog-api-dotnet/Dockerfile
+    environment:
+      Database__Provider: Postgres
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_BLOG_DB:-blogdb};Username=${POSTGRES_USER:-platform};Password=${POSTGRES_PASSWORD:-platform-dev-password}
+      Jwt__Issuer: ${JWT_ISSUER:-TemplateProject.AuthServer}
+      Jwt__Audience: ${JWT_AUDIENCE:-TemplateProject.Frontends}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-local-dev-secret-change-me-please-1234567890}
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres-backup:
+    build:
+      context: .
+      dockerfile: ops/postgres/backup/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform-dev-password}
+      POSTGRES_DATABASES: ${POSTGRES_AUTH_DB:-authdb} ${POSTGRES_BLOG_DB:-blogdb}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_LOCAL_RETENTION_DAYS: ${BACKUP_LOCAL_RETENTION_DAYS:-14}
+      BACKUP_REMOTE_RETENTION_DAYS: ${BACKUP_REMOTE_RETENTION_DAYS:-30}
+      BACKUP_DIR: /backups
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-postgres}
+      BACKUP_S3_REGION: ${BACKUP_S3_REGION}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT}
+      BACKUP_S3_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID}
+      BACKUP_S3_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY}
+    volumes:
+      - postgres-backups:/backups
+      - ./ops/postgres/backup/pg-backup.sh:/scripts/pg-backup.sh:ro
+      - ./ops/postgres/backup/restore-from-backup.sh:/scripts/restore-from-backup.sh:ro
+    command: ["bash", "/scripts/pg-backup.sh"]
+    restart: unless-stopped
+
+  public-site:
+    build:
+      context: .
+      dockerfile: apps/public-site-react/Dockerfile
+      args:
+        VITE_BLOG_API_BASE_URL: ""
+        VITE_BLOG_MODE: api
+    ports:
+      - "127.0.0.1:${PUBLIC_SITE_PORT:-8080}:80"
+    depends_on:
+      - blog-api
+    restart: unless-stopped
+
+  admin-site:
+    build:
+      context: .
+      dockerfile: apps/admin-react/Dockerfile
+      args:
+        VITE_AUTH_API_BASE_URL: ""
+        VITE_BLOG_API_BASE_URL: ""
+        VITE_DASHBOARD_API_BASE_URL: ""
+        VITE_AUTH_MODE: api
+        VITE_BLOG_MODE: api
+        VITE_DASHBOARD_MODE: api
+        VITE_PUBLIC_APP_URL: http://127.0.0.1:${PUBLIC_SITE_PORT:-8080}
+        VITE_ACCOUNT_APP_URL: http://127.0.0.1:${ACCOUNT_SITE_PORT:-8082}
+        VITE_DASHBOARD_APP_URL: http://127.0.0.1:${DASHBOARD_SITE_PORT:-8083}
+    ports:
+      - "127.0.0.1:${ADMIN_SITE_PORT:-8081}:80"
+    depends_on:
+      - auth-api
+      - blog-api
+    restart: unless-stopped
+
+  account-site:
+    build:
+      context: .
+      dockerfile: apps/account-react/Dockerfile
+      args:
+        VITE_AUTH_API_BASE_URL: ""
+        VITE_BLOG_API_BASE_URL: ""
+        VITE_AUTH_MODE: api
+        VITE_BLOG_MODE: api
+        VITE_PUBLIC_APP_URL: http://127.0.0.1:${PUBLIC_SITE_PORT:-8080}
+    ports:
+      - "127.0.0.1:${ACCOUNT_SITE_PORT:-8082}:80"
+    depends_on:
+      - auth-api
+      - blog-api
+    restart: unless-stopped
+
+  dashboard-site:
+    build:
+      context: .
+      dockerfile: apps/dashboard-react/Dockerfile
+      args:
+        VITE_AUTH_API_BASE_URL: ""
+        VITE_DASHBOARD_API_BASE_URL: ""
+        VITE_AUTH_MODE: api
+        VITE_DASHBOARD_MODE: api
+        VITE_PUBLIC_APP_URL: http://127.0.0.1:${PUBLIC_SITE_PORT:-8080}
+        VITE_ACCOUNT_APP_URL: http://127.0.0.1:${ACCOUNT_SITE_PORT:-8082}
+        VITE_ADMIN_APP_URL: http://127.0.0.1:${ADMIN_SITE_PORT:-8081}
+    ports:
+      - "127.0.0.1:${DASHBOARD_SITE_PORT:-8083}:80"
+    depends_on:
+      - auth-api
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  postgres-backups:

@@ -1,0 +1,7 @@
+node_modules/
+apps/*/dist/
+apps/*/bin/
+apps/*/obj/
+apps/*/*.db
+apps/*/*.db-journal
+deploy/.env.production
