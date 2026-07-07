@@ -5,8 +5,8 @@ import { useAuth } from "../state/AuthProvider";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("editor@example.com");
-  const [password, setPassword] = useState("Editor123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent) {
@@ -22,7 +22,7 @@ export function LoginPage() {
   return (
     <section className="panel page-card">
       <div className="eyebrow">Dashboard sign in</div>
-      <h2>Required flow: login, load summary, inspect timeline, filter, open detail.</h2>
+      <h2>Dashboard sign in</h2>
       <form className="form-grid" onSubmit={onSubmit}>
         <label className="field">
           <span>Email</span>
@@ -33,7 +33,7 @@ export function LoginPage() {
           <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
         </label>
         {error && <p className="error-text">{error}</p>}
-        <button className="btn btn-primary" type="submit">Enter dashboard</button>
+        <button className="btn btn-primary" type="submit">Sign in</button>
       </form>
     </section>
   );

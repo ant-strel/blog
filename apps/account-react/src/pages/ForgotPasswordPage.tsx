@@ -4,7 +4,7 @@ import { useAuth } from "../state/AuthProvider";
 
 export function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();
-  const [email, setEmail] = useState("editor@example.com");
+  const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 

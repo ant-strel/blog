@@ -3,6 +3,7 @@ using Blog.Api.Contracts.Public;
 using Blog.Api.Data;
 using Blog.Api.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Blog.Api.Services;
 
@@ -43,8 +44,8 @@ public class BlogArticleService : IBlogArticleService
             {
                 Id = article.Id,
                 Slug = article.Slug,
-                Title = article.Title,
-                Excerpt = article.Excerpt,
+                Title = DeserializeLocalizedText(article.Title),
+                Excerpt = DeserializeLocalizedText(article.Excerpt),
                 Author = article.Author,
                 Tags = article.Tags,
                 PublishedAtUtc = article.PublishedAtUtc ?? article.UpdatedAtUtc
@@ -66,9 +67,9 @@ public class BlogArticleService : IBlogArticleService
             {
                 Id = article.Id,
                 Slug = article.Slug,
-                Title = article.Title,
-                Excerpt = article.Excerpt,
-                Content = article.Content,
+                Title = DeserializeLocalizedText(article.Title),
+                Excerpt = DeserializeLocalizedText(article.Excerpt),
+                Content = DeserializeLocalizedText(article.Content),
                 Author = article.Author,
                 Tags = article.Tags,
                 PublishedAtUtc = article.PublishedAtUtc ?? article.UpdatedAtUtc
@@ -90,9 +91,9 @@ public class BlogArticleService : IBlogArticleService
             {
                 Id = article.Id,
                 Slug = article.Slug,
-                Title = article.Title,
-                Excerpt = article.Excerpt,
-                Content = article.Content,
+                Title = DeserializeLocalizedText(article.Title),
+                Excerpt = DeserializeLocalizedText(article.Excerpt),
+                Content = DeserializeLocalizedText(article.Content),
                 Author = article.Author,
                 Status = article.Status,
                 Tags = article.Tags,
@@ -111,9 +112,9 @@ public class BlogArticleService : IBlogArticleService
             {
                 Id = article.Id,
                 Slug = article.Slug,
-                Title = article.Title,
-                Excerpt = article.Excerpt,
-                Content = article.Content,
+                Title = DeserializeLocalizedText(article.Title),
+                Excerpt = DeserializeLocalizedText(article.Excerpt),
+                Content = DeserializeLocalizedText(article.Content),
                 Author = article.Author,
                 Status = article.Status,
                 Tags = article.Tags,
@@ -135,9 +136,9 @@ public class BlogArticleService : IBlogArticleService
         {
             Id = Guid.NewGuid(),
             Slug = request.Slug.Trim(),
-            Title = request.Title.Trim(),
-            Excerpt = request.Excerpt.Trim(),
-            Content = request.Content.Trim(),
+            Title = SerializeLocalizedText(request.Title),
+            Excerpt = SerializeLocalizedText(request.Excerpt),
+            Content = SerializeLocalizedText(request.Content),
             Author = request.Author.Trim(),
             Tags = request.Tags.Select(tag => tag.Trim()).Where(tag => tag.Length > 0).Distinct().ToArray(),
             Status = "draft",
@@ -168,9 +169,9 @@ public class BlogArticleService : IBlogArticleService
         }
 
         article.Slug = request.Slug.Trim();
-        article.Title = request.Title.Trim();
-        article.Excerpt = request.Excerpt.Trim();
-        article.Content = request.Content.Trim();
+        article.Title = SerializeLocalizedText(request.Title);
+        article.Excerpt = SerializeLocalizedText(request.Excerpt);
+        article.Content = SerializeLocalizedText(request.Content);
         article.Author = request.Author.Trim();
         article.Tags = request.Tags.Select(tag => tag.Trim()).Where(tag => tag.Length > 0).Distinct().ToArray();
         article.UpdatedAtUtc = DateTime.UtcNow;
@@ -227,9 +228,9 @@ public class BlogArticleService : IBlogArticleService
     {
         Id = article.Id,
         Slug = article.Slug,
-        Title = article.Title,
-        Excerpt = article.Excerpt,
-        Content = article.Content,
+        Title = DeserializeLocalizedText(article.Title),
+        Excerpt = DeserializeLocalizedText(article.Excerpt),
+        Content = DeserializeLocalizedText(article.Content),
         Author = article.Author,
         Status = article.Status,
         Tags = article.Tags,
@@ -246,6 +247,47 @@ public class BlogArticleService : IBlogArticleService
             Status = article.Status,
             UpdatedAtUtc = article.UpdatedAtUtc,
             PublishedAtUtc = article.PublishedAtUtc
+        };
+    }
+
+    private static string SerializeLocalizedText(IDictionary<string, string> value)
+    {
+        var normalized = value
+            .Where(item => !string.IsNullOrWhiteSpace(item.Value))
+            .ToDictionary(
+                item => item.Key.Trim().ToLowerInvariant(),
+                item => item.Value.Trim());
+
+        if (normalized.Count == 0)
+        {
+            throw new InvalidOperationException("At least one localized value is required.");
+        }
+
+        return JsonSerializer.Serialize(normalized);
+    }
+
+    private static IDictionary<string, string> DeserializeLocalizedText(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new Dictionary<string, string>();
+        }
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(value);
+            if (parsed is not null && parsed.Count > 0)
+            {
+                return parsed;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        return new Dictionary<string, string>
+        {
+            ["en"] = value
         };
     }
 }

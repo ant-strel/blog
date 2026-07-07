@@ -1,10 +1,10 @@
-import type { BlogPost, BlogPostQuery, PaginatedResult } from "@template/contracts";
+import type { BlogPost, BlogPostQuery, LocalizedText, PaginatedResult } from "@template/contracts";
 
 export interface CreateAdminArticleRequest {
   slug: string;
-  title: string;
-  excerpt: string;
-  content: string;
+  title: LocalizedText;
+  excerpt: LocalizedText;
+  content: LocalizedText;
   author: string;
   tags: string[];
 }
@@ -28,8 +28,8 @@ interface PublicArticleListResponse {
   items: Array<{
     id: string;
     slug: string;
-    title: string;
-    excerpt: string;
+    title: LocalizedText;
+    excerpt: LocalizedText;
     author: string;
     tags: string[];
     publishedAtUtc: string;
@@ -40,9 +40,9 @@ interface PublicArticleListResponse {
 interface PublicArticleResponse {
   id: string;
   slug: string;
-  title: string;
-  excerpt: string;
-  content: string;
+  title: LocalizedText;
+  excerpt: LocalizedText;
+  content: LocalizedText;
   author: string;
   tags: string[];
   publishedAtUtc: string;
@@ -51,9 +51,9 @@ interface PublicArticleResponse {
 interface AdminArticleResponse {
   id: string;
   slug: string;
-  title: string;
-  excerpt: string;
-  content: string;
+  title: LocalizedText;
+  excerpt: LocalizedText;
+  content: LocalizedText;
   author: string;
   status: "draft" | "published" | "archived";
   tags: string[];
@@ -192,9 +192,21 @@ const mockPosts: BlogPost[] = [
   {
     id: "post-1",
     slug: "react-auth-perimeter",
-    title: "React auth perimeter for the first platform slice",
-    excerpt: "How public, account and admin shells share one JWT session model.",
-    content: "The first slice keeps auth JWT-first, moves API calls behind typed clients, and aligns route guards across shells.",
+    title: {
+      en: "React auth perimeter for the first platform slice",
+      ru: "React auth perimeter for the first platform slice",
+      es: "Perimetro de autenticacion React para el primer corte de plataforma"
+    },
+    excerpt: {
+      en: "How public, account and admin shells share one JWT session model.",
+      ru: "How public, account and admin shells share one JWT session model.",
+      es: "Como las superficies public, account y admin comparten una sesion JWT."
+    },
+    content: {
+      en: "The first slice keeps auth JWT-first, moves API calls behind typed clients, and aligns route guards across shells.",
+      ru: "The first slice keeps auth JWT-first, moves API calls behind typed clients, and aligns route guards across shells.",
+      es: "El primer corte mantiene JWT como base de autenticacion, mueve las llamadas API detras de clientes tipados y alinea las rutas protegidas."
+    },
     author: "Anton Strelkov",
     tags: ["react", "auth", "jwt"],
     publishedAtUtc: "2026-06-20T10:00:00.000Z",
@@ -204,9 +216,21 @@ const mockPosts: BlogPost[] = [
   {
     id: "post-2",
     slug: "blog-boundary-editor-later",
-    title: "Blog first, editor later",
-    excerpt: "Public blog surfaces belong in the first slice. Rich authoring does not.",
-    content: "Landing pages remain config-driven while articles alone cross into editor-backed territory.",
+    title: {
+      en: "Blog first, editor later",
+      ru: "Blog first, editor later",
+      es: "Primero el blog, despues el editor"
+    },
+    excerpt: {
+      en: "Public blog surfaces belong in the first slice. Rich authoring does not.",
+      ru: "Public blog surfaces belong in the first slice. Rich authoring does not.",
+      es: "La parte publica del blog entra primero; la autoria avanzada no."
+    },
+    content: {
+      en: "Landing pages remain config-driven while articles alone cross into editor-backed territory.",
+      ru: "Landing pages remain config-driven while articles alone cross into editor-backed territory.",
+      es: "Las paginas publicas quedan guiadas por configuracion y solo los articulos pasan al territorio del editor."
+    },
     author: "Anton Strelkov",
     tags: ["blog", "content", "architecture"],
     publishedAtUtc: "2026-06-25T08:30:00.000Z",
@@ -216,9 +240,21 @@ const mockPosts: BlogPost[] = [
   {
     id: "post-3",
     slug: "draft-editor-entrypoint",
-    title: "Draft editor entrypoint",
-    excerpt: "Protected drafts live behind auth and stay out of the public site by default.",
-    content: "This draft exists only to validate the auth guard and content boundary.",
+    title: {
+      en: "Draft editor entrypoint",
+      ru: "Draft editor entrypoint",
+      es: "Entrada al editor de borradores"
+    },
+    excerpt: {
+      en: "Protected drafts live behind auth and stay out of the public site by default.",
+      ru: "Protected drafts live behind auth and stay out of the public site by default.",
+      es: "Los borradores protegidos viven tras autenticacion y no aparecen publicamente por defecto."
+    },
+    content: {
+      en: "This draft exists only to validate the auth guard and content boundary.",
+      ru: "This draft exists only to validate the auth guard and content boundary.",
+      es: "Este borrador existe solo para validar la proteccion de rutas y el limite de contenido."
+    },
     author: "Editorial Owner",
     tags: ["drafts", "auth"],
     publishedAtUtc: "2026-06-29T08:00:00.000Z",

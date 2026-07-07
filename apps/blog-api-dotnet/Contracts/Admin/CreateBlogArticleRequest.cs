@@ -8,13 +8,13 @@ public class CreateBlogArticleRequest
     public string Slug { get; set; } = string.Empty;
 
     [Required]
-    public string Title { get; set; } = string.Empty;
+    public IDictionary<string, string> Title { get; set; } = new Dictionary<string, string>();
 
     [Required]
-    public string Excerpt { get; set; } = string.Empty;
+    public IDictionary<string, string> Excerpt { get; set; } = new Dictionary<string, string>();
 
     [Required]
-    public string Content { get; set; } = string.Empty;
+    public IDictionary<string, string> Content { get; set; } = new Dictionary<string, string>();
 
     [Required]
     public string Author { get; set; } = string.Empty;

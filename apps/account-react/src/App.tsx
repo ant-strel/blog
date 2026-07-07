@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from "react-router-dom";
+import { resolveAppUrl } from "@template/api-client-ts";
 import { RequireAuth } from "./state/RequireAuth";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -8,15 +9,16 @@ import { AccountHomePage } from "./pages/AccountHomePage";
 import { DraftsPage } from "./pages/DraftsPage";
 
 export default function App() {
+  const publicAppUrl = resolveAppUrl(import.meta.env.VITE_PUBLIC_APP_URL, "http://localhost:5173");
+
   return (
     <div className="shell account-shell">
       <header className="account-header">
-        <div>
-          <div className="eyebrow">Account Shell</div>
-          <h1 className="account-title">JWT-first auth flow on React.</h1>
-        </div>
+        <Link className="logo" to="/">
+          Template Project
+        </Link>
         <nav className="public-nav">
-          <a href="http://localhost:5173">Public</a>
+          <a href={publicAppUrl}>Public</a>
           <Link to="/login">Login</Link>
           <Link to="/register">Register</Link>
         </nav>

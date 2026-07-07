@@ -6,8 +6,8 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("editor@example.com");
-  const [password, setPassword] = useState("Editor123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,7 +29,7 @@ export function LoginPage() {
   return (
     <section className="panel form-card">
       <div className="eyebrow">Sign in</div>
-      <h2>Reuse the same JWT session semantics across shells.</h2>
+      <h2>Sign in</h2>
       <form onSubmit={onSubmit} className="form-grid">
         <label className="field">
           <span>Email</span>

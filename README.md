@@ -1,5 +1,168 @@
 # personal_page_vue
 
+## VPS Docker Deploy Под Ключ
+
+Ниже порядок для чистого Ubuntu VPS, где внешний nginx принимает реальные домены, проксирует на локальные Docker-порты, а контейнерные nginx внутри фронтендов проксируют `/api/...` в приватную Docker-сеть.
+
+### 1. Подготовить DNS
+
+Создай DNS A/AAAA-записи на IP VPS:
+
+- `blog.example.com` - публичный блог.
+- `admin.blog.example.com` - закрытая админка и редактор.
+- `account.blog.example.com` - прямая страница login/account.
+- `dashboard.blog.example.com` - служебный dashboard.
+
+Можно использовать любые домены. Их нужно будет вписать в `deploy/.env.production`.
+
+### 2. Скопировать проект на сервер
+
+```bash
+git clone <repo-url>
+cd personal_page_vue
+git checkout codex/react-blog-platform
+```
+
+### 3. Установить Docker, Compose plugin, nginx, certbot
+
+```bash
+bash deploy/scripts/bootstrap-ubuntu.sh
+```
+
+Если скрипт добавил пользователя в группу `docker`, перелогинься в SSH-сессию перед deploy.
+
+### 4. Создать production env
+
+```bash
+cp deploy/.env.production.example deploy/.env.production
+nano deploy/.env.production
+```
+
+Заполни реальные значения:
+
+```env
+PUBLIC_DOMAIN=blog.example.com
+ADMIN_DOMAIN=admin.blog.example.com
+ACCOUNT_DOMAIN=account.blog.example.com
+DASHBOARD_DOMAIN=dashboard.blog.example.com
+EMAIL=admin@example.com
+PROJECT_NAME=blog-platform
+
+PUBLIC_SITE_PORT=8080
+ADMIN_SITE_PORT=8081
+ACCOUNT_SITE_PORT=8082
+DASHBOARD_SITE_PORT=8083
+
+POSTGRES_USER=platform
+POSTGRES_PASSWORD=replace-with-strong-db-password
+POSTGRES_AUTH_DB=authdb
+POSTGRES_BLOG_DB=blogdb
+
+JWT_ISSUER=TemplateProject.AuthServer
+JWT_AUDIENCE=TemplateProject.Frontends
+JWT_SECRET_KEY=replace-with-a-long-random-secret-at-least-32-characters
+
+SEED_EDITOR_EMAIL=editor@example.com
+SEED_EDITOR_PASSWORD=replace-with-strong-editor-password
+SEED_EDITOR_FIRST_NAME=Editorial
+SEED_EDITOR_LAST_NAME=Owner
+
+BACKUP_INTERVAL_SECONDS=86400
+BACKUP_LOCAL_RETENTION_DAYS=14
+BACKUP_REMOTE_RETENTION_DAYS=30
+BACKUP_S3_BUCKET=blog-platform-backups
+BACKUP_S3_PREFIX=postgres
+BACKUP_S3_REGION=us-east-1
+BACKUP_S3_ENDPOINT=https://s3.amazonaws.com
+BACKUP_S3_ACCESS_KEY_ID=replace-me
+BACKUP_S3_SECRET_ACCESS_KEY=replace-me
+```
+
+Что куда вписывать:
+
+- `PUBLIC_DOMAIN`, `ADMIN_DOMAIN`, `ACCOUNT_DOMAIN`, `DASHBOARD_DOMAIN` - реальные домены, которые смотрят на VPS.
+- `EMAIL` - email для Let's Encrypt.
+- `PUBLIC_SITE_PORT`, `ADMIN_SITE_PORT`, `ACCOUNT_SITE_PORT`, `DASHBOARD_SITE_PORT` - loopback-порты на VPS. Если `8080` занят, меняй здесь.
+- `POSTGRES_PASSWORD` - пароль Postgres внутри Docker-сети.
+- `JWT_SECRET_KEY` - общий секрет для `auth-api` и `blog-api`; не меняй его отдельно только для одного сервиса.
+- `SEED_EDITOR_EMAIL` и `SEED_EDITOR_PASSWORD` - логин и пароль для входа в `https://<ADMIN_DOMAIN>/login`.
+- `BACKUP_S3_*` - S3-compatible storage для backup. Bucket нужно создать заранее.
+
+### 5. Проверить DNS перед certbot
+
+```bash
+dig +short blog.example.com
+dig +short admin.blog.example.com
+dig +short account.blog.example.com
+dig +short dashboard.blog.example.com
+```
+
+Все команды должны вернуть IP VPS. Если `dig` не установлен, используй `nslookup`.
+
+### 6. Запустить deploy
+
+```bash
+bash deploy/scripts/deploy.sh
+```
+
+Скрипт делает следующее:
+
+- читает `deploy/.env.production`;
+- рендерит host nginx config из `deploy/nginx/blog-platform.conf.template`;
+- включает конфиг в `/etc/nginx/sites-enabled/blog-platform.conf`;
+- проверяет и перезагружает nginx;
+- собирает и запускает Docker Compose stack;
+- выпускает Let's Encrypt сертификаты через certbot и включает HTTPS redirect.
+
+### 7. Проверить результат
+
+Открой:
+
+- `https://<PUBLIC_DOMAIN>` - публичный сайт.
+- `https://<PUBLIC_DOMAIN>/blog` - публичный блог.
+- `https://<ADMIN_DOMAIN>/login` - вход редактора.
+- `https://<ADMIN_DOMAIN>/blog` - список статей после входа.
+- `https://<ACCOUNT_DOMAIN>/login` - прямой account login.
+- `https://<DASHBOARD_DOMAIN>/login` - dashboard login.
+
+На публичном сайте нет ссылки на login. Вход редактора доступен только по прямой ссылке admin/account.
+
+### 8. Обновление после изменений
+
+```bash
+git pull
+docker compose --env-file deploy/.env.production up -d --build
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Если менялись домены или порты, заново отрендери nginx:
+
+```bash
+bash deploy/scripts/render-nginx-conf.sh deploy/.env.production /etc/nginx/sites-available/blog-platform.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### 9. Диагностика
+
+```bash
+docker compose --env-file deploy/.env.production ps
+docker compose --env-file deploy/.env.production logs -f auth-api
+docker compose --env-file deploy/.env.production logs -f blog-api
+docker compose --env-file deploy/.env.production logs -f admin-site
+```
+
+Если после входа editor получает `401` на admin blog endpoints:
+
+- пересоздай `auth-api`, `blog-api`, `admin-site`;
+- очисти `localStorage` для admin-домена или сделай logout/login;
+- проверь, что `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_SECRET_KEY` одинаковые для `auth-api` и `blog-api`.
+
+## Кастомизация Контента
+
+Отдельный список мест для изменения текстов, контактов, описаний, seed-статей и языков находится в [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md).
+
 This repository now contains two layers:
 
 - `personal_page/` - the original Vue project kept as a reference.
@@ -39,6 +202,41 @@ Loopback ports on the VPS host:
 - `127.0.0.1:8081` - admin React.
 - `127.0.0.1:8082` - account React.
 - `127.0.0.1:8083` - dashboard React.
+
+For local Docker runs, you can override these host ports without editing `docker-compose.yml`:
+
+```bash
+PUBLIC_SITE_PORT=18080
+ADMIN_SITE_PORT=18081
+ACCOUNT_SITE_PORT=18082
+DASHBOARD_SITE_PORT=18083
+docker compose up --build postgres auth-api blog-api public-site admin-site account-site dashboard-site
+```
+
+Cross-app frontend links are also derived from these same port variables during Docker build, so admin/account/dashboard navigation stays on the published Docker ports instead of falling back to Vite `localhost:517x`. The public site does not expose an account/login menu entry; login remains available only by direct account URL.
+
+The editor account is seeded by `auth-api` into the auth database on startup. For Docker runs, override it with runtime environment variables:
+
+```bash
+SEED_EDITOR_EMAIL=editor@example.com
+SEED_EDITOR_PASSWORD=Editor123!
+SEED_EDITOR_FIRST_NAME=Editorial
+SEED_EDITOR_LAST_NAME=Owner
+```
+
+The same values map to ASP.NET configuration keys `Seed__EditorEmail`, `Seed__EditorPassword`, `Seed__EditorFirstName`, and `Seed__EditorLastName`. React login forms do not embed these credentials.
+
+Auth and blog APIs must share the same JWT settings. Docker Compose wires these into both services; override them together if needed:
+
+```bash
+JWT_ISSUER=TemplateProject.AuthServer
+JWT_AUDIENCE=TemplateProject.Frontends
+JWT_SECRET_KEY=replace-with-a-long-random-secret
+```
+
+The same values map to ASP.NET configuration keys `Jwt__Issuer`, `Jwt__Audience`, and `Jwt__SecretKey`.
+
+Blog articles support localized title, excerpt, and content values for `en`, `ru`, and `es`. The admin editor exposes language tabs for these locales. Existing one-language records are treated as English fallback content when read by the API.
 
 Deployment package:
 

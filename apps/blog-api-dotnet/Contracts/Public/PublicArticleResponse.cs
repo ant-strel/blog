@@ -2,5 +2,5 @@ namespace Blog.Api.Contracts.Public;
 
 public class PublicArticleResponse : PublicArticleSummaryResponse
 {
-    public string Content { get; set; } = string.Empty;
+    public IDictionary<string, string> Content { get; set; } = new Dictionary<string, string>();
 }

@@ -10,4 +10,9 @@ function resolveApiBaseUrl(envValue: string | undefined, fallback: string): stri
   return fallback;
 }
 
-export { resolveApiBaseUrl };
+function resolveAppUrl(envValue: string | undefined, fallback: string): string {
+  const value = envValue && envValue.trim().length > 0 ? envValue : fallback;
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
+export { resolveApiBaseUrl, resolveAppUrl };

@@ -112,23 +112,7 @@ interface MockUserRecord {
   emailConfirmed: boolean;
 }
 
-const mockUsers = new Map<string, MockUserRecord>([
-  [
-    "editor@example.com",
-    {
-      user: {
-        id: "u-editor",
-        email: "editor@example.com",
-        firstName: "Editorial",
-        lastName: "Owner",
-        isActive: true,
-        roles: ["User", "Editor"]
-      },
-      password: "Editor123!",
-      emailConfirmed: true
-    }
-  ]
-]);
+const mockUsers = new Map<string, MockUserRecord>();
 
 const refreshTokens = new Map<string, string>();
 

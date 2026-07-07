@@ -24,6 +24,13 @@ services:
     environment:
       Database__Provider: Postgres
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_AUTH_DB:-authdb};Username=${POSTGRES_USER:-platform};Password=${POSTGRES_PASSWORD:-platform-dev-password}
+      Jwt__Issuer: ${JWT_ISSUER:-TemplateProject.AuthServer}
+      Jwt__Audience: ${JWT_AUDIENCE:-TemplateProject.Frontends}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-local-dev-secret-change-me-please-1234567890}
+      Seed__EditorEmail: ${SEED_EDITOR_EMAIL:-editor@example.com}
+      Seed__EditorPassword: ${SEED_EDITOR_PASSWORD:-Editor123!}
+      Seed__EditorFirstName: ${SEED_EDITOR_FIRST_NAME:-Editorial}
+      Seed__EditorLastName: ${SEED_EDITOR_LAST_NAME:-Owner}
     expose:
       - "8080"
     depends_on:
@@ -38,6 +45,9 @@ services:
     environment:
       Database__Provider: Postgres
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_BLOG_DB:-blogdb};Username=${POSTGRES_USER:-platform};Password=${POSTGRES_PASSWORD:-platform-dev-password}
+      Jwt__Issuer: ${JWT_ISSUER:-TemplateProject.AuthServer}
+      Jwt__Audience: ${JWT_AUDIENCE:-TemplateProject.Frontends}
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-local-dev-secret-change-me-please-1234567890}
     expose:
       - "8080"
     depends_on:
@@ -83,7 +93,7 @@ services:
         VITE_BLOG_API_BASE_URL: ""
         VITE_BLOG_MODE: api
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:${PUBLIC_SITE_PORT:-8080}:80"
     depends_on:
       - blog-api
     restart: unless-stopped
@@ -99,8 +109,11 @@ services:
         VITE_AUTH_MODE: api
         VITE_BLOG_MODE: api
         VITE_DASHBOARD_MODE: api
+        VITE_PUBLIC_APP_URL: http://127.0.0.1:${PUBLIC_SITE_PORT:-8080}
+        VITE_ACCOUNT_APP_URL: http://127.0.0.1:${ACCOUNT_SITE_PORT:-8082}
+        VITE_DASHBOARD_APP_URL: http://127.0.0.1:${DASHBOARD_SITE_PORT:-8083}
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:${ADMIN_SITE_PORT:-8081}:80"
     depends_on:
       - auth-api
       - blog-api
@@ -115,8 +128,9 @@ services:
         VITE_BLOG_API_BASE_URL: ""
         VITE_AUTH_MODE: api
         VITE_BLOG_MODE: api
+        VITE_PUBLIC_APP_URL: http://127.0.0.1:${PUBLIC_SITE_PORT:-8080}
     ports:
-      - "127.0.0.1:8082:80"
+      - "127.0.0.1:${ACCOUNT_SITE_PORT:-8082}:80"
     depends_on:
       - auth-api
       - blog-api
@@ -131,8 +145,11 @@ services:
         VITE_DASHBOARD_API_BASE_URL: ""
         VITE_AUTH_MODE: api
         VITE_DASHBOARD_MODE: api
+        VITE_PUBLIC_APP_URL: http://127.0.0.1:${PUBLIC_SITE_PORT:-8080}
+        VITE_ACCOUNT_APP_URL: http://127.0.0.1:${ACCOUNT_SITE_PORT:-8082}
+        VITE_ADMIN_APP_URL: http://127.0.0.1:${ADMIN_SITE_PORT:-8081}
     ports:
-      - "127.0.0.1:8083:80"
+      - "127.0.0.1:${DASHBOARD_SITE_PORT:-8083}:80"
     depends_on:
       - auth-api
     restart: unless-stopped

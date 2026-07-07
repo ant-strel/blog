@@ -23,13 +23,15 @@ public class AuthSeeder : IAuthSeeder
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
+        ValidateSeedOptions();
+
         await EnsureRoleAsync("User");
         await EnsureRoleAsync("Editor");
 
-        var existingUser = await _userManager.FindByEmailAsync(_seedOptions.EditorEmail);
-        if (existingUser is null)
+        var user = await _userManager.FindByEmailAsync(_seedOptions.EditorEmail);
+        if (user is null)
         {
-            var user = new ApplicationUser
+            user = new ApplicationUser
             {
                 Id = Guid.NewGuid(),
                 UserName = _seedOptions.EditorEmail,
@@ -49,7 +51,17 @@ public class AuthSeeder : IAuthSeeder
             }
 
             await _userManager.AddToRolesAsync(user, ["User", "Editor"]);
+            return;
         }
+
+        if (!user.EmailConfirmed)
+        {
+            user.EmailConfirmed = true;
+            await _userManager.UpdateAsync(user);
+        }
+
+        await EnsureUserRoleAsync(user, "User");
+        await EnsureUserRoleAsync(user, "Editor");
     }
 
     private async Task EnsureRoleAsync(string roleName)
@@ -63,6 +75,27 @@ public class AuthSeeder : IAuthSeeder
                 NormalizedName = roleName.ToUpperInvariant(),
                 Description = $"Seeded {roleName} role."
             });
+        }
+    }
+
+    private async Task EnsureUserRoleAsync(ApplicationUser user, string roleName)
+    {
+        if (!await _userManager.IsInRoleAsync(user, roleName))
+        {
+            await _userManager.AddToRoleAsync(user, roleName);
+        }
+    }
+
+    private void ValidateSeedOptions()
+    {
+        if (string.IsNullOrWhiteSpace(_seedOptions.EditorEmail))
+        {
+            throw new InvalidOperationException("Seed:EditorEmail is not configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_seedOptions.EditorPassword))
+        {
+            throw new InvalidOperationException("Seed:EditorPassword is not configured.");
         }
     }
 }

@@ -4,10 +4,10 @@ import { useAuth } from "../state/AuthProvider";
 
 export function RegisterPage() {
   const { register, requestEmailConfirmation, confirmEmail } = useAuth();
-  const [firstName, setFirstName] = useState("Anton");
-  const [lastName, setLastName] = useState("Strelkov");
-  const [email, setEmail] = useState("new-user@example.com");
-  const [password, setPassword] = useState("Editor123!");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

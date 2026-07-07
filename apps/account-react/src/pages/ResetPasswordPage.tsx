@@ -4,9 +4,9 @@ import { useAuth } from "../state/AuthProvider";
 
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
-  const [email, setEmail] = useState("editor@example.com");
-  const [token, setToken] = useState("reset-u-editor");
-  const [newPassword, setNewPassword] = useState("Editor123!");
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
