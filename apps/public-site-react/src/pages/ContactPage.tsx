@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import type { LocaleCode } from "@template/contracts";
+import { Seo } from "../components/Seo";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
 
@@ -19,6 +20,12 @@ export function ContactPage({ locale }: { locale: LocaleCode }) {
 
   return (
     <div className="contact">
+      <Seo
+        title={`${localize(siteContent.contact.title, locale)} | d-antes`}
+        description={localize(siteContent.contact.subtitle, locale)}
+        path="/contact"
+        locale={locale}
+      />
       <section className="blog-hero">
         <h1 className="title">{localize(siteContent.contact.title, locale)}</h1>
         <p className="subtitle">{localize(siteContent.contact.subtitle, locale)}</p>

@@ -33,6 +33,7 @@ interface PublicArticleListResponse {
     author: string;
     tags: string[];
     publishedAtUtc: string;
+    updatedAtUtc: string;
   }>;
   total: number;
 }
@@ -46,6 +47,7 @@ interface PublicArticleResponse {
   author: string;
   tags: string[];
   publishedAtUtc: string;
+  updatedAtUtc: string;
 }
 
 interface AdminArticleResponse {
@@ -354,7 +356,7 @@ function mapPublicArticle(item: PublicArticleResponse | PublicArticleListRespons
     author: item.author,
     tags: item.tags,
     publishedAtUtc: item.publishedAtUtc,
-    updatedAtUtc: item.publishedAtUtc,
+    updatedAtUtc: item.updatedAtUtc,
     status: "published"
   };
 }

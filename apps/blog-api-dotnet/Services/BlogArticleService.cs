@@ -48,7 +48,8 @@ public class BlogArticleService : IBlogArticleService
                 Excerpt = DeserializeLocalizedText(article.Excerpt),
                 Author = article.Author,
                 Tags = article.Tags,
-                PublishedAtUtc = article.PublishedAtUtc ?? article.UpdatedAtUtc
+                PublishedAtUtc = article.PublishedAtUtc ?? article.UpdatedAtUtc,
+                UpdatedAtUtc = article.UpdatedAtUtc
             })
             .ToListAsync(cancellationToken);
 
@@ -72,7 +73,8 @@ public class BlogArticleService : IBlogArticleService
                 Content = DeserializeLocalizedText(article.Content),
                 Author = article.Author,
                 Tags = article.Tags,
-                PublishedAtUtc = article.PublishedAtUtc ?? article.UpdatedAtUtc
+                PublishedAtUtc = article.PublishedAtUtc ?? article.UpdatedAtUtc,
+                UpdatedAtUtc = article.UpdatedAtUtc
             })
             .SingleOrDefaultAsync(cancellationToken);
     }

@@ -9,4 +9,5 @@ public class PublicArticleSummaryResponse
     public string Author { get; set; } = string.Empty;
     public IList<string> Tags { get; set; } = [];
     public DateTime PublishedAtUtc { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
 }

@@ -3,12 +3,17 @@ import { Link, Route, Routes } from "react-router-dom";
 import type { LocaleCode } from "@template/contracts";
 import { BlogIndexPage } from "./pages/BlogIndexPage";
 import { BlogArticlePage } from "./pages/BlogArticlePage";
+import { BlogArticleEditorPage } from "./pages/BlogArticleEditorPage";
 import { HomePage } from "./pages/HomePage";
+import { LoginPage } from "./pages/LoginPage";
 import { ContactPage } from "./pages/ContactPage";
+import { editorContent } from "./content/editorContent";
 import { siteContent } from "./content/siteContent";
 import { localize } from "./lib/localize";
+import { useAuth } from "./state/AuthProvider";
 
 export default function App() {
+  const { ready, tokens, logout } = useAuth();
   const [locale, setLocale] = useState<LocaleCode>(getInitialLocale());
 
   return (
@@ -22,6 +27,11 @@ export default function App() {
             <Link to="/">{localize(siteContent.nav.home, locale)}</Link>
             <Link to="/blog">{localize(siteContent.nav.blog, locale)}</Link>
             <Link to="/contact">{localize(siteContent.nav.contact, locale)}</Link>
+            {ready && tokens && (
+              <button className="nav-button" type="button" onClick={() => void logout()}>
+                {localize(editorContent.articleList.signOut, locale)}
+              </button>
+            )}
           </nav>
           <label className="language-selector">
             <span>{localize(siteContent.languageLabel, locale)}</span>
@@ -39,7 +49,10 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage locale={locale} />} />
             <Route path="/blog" element={<BlogIndexPage locale={locale} />} />
+            <Route path="/blog/editor/new" element={<BlogArticleEditorPage locale={locale} />} />
+            <Route path="/blog/editor/:articleId" element={<BlogArticleEditorPage locale={locale} />} />
             <Route path="/blog/:slug" element={<BlogArticlePage locale={locale} />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/contact" element={<ContactPage locale={locale} />} />
           </Routes>
         </div>

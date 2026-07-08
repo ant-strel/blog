@@ -1,11 +1,18 @@
 import { Link } from "react-router-dom";
 import type { LocaleCode } from "@template/contracts";
+import { Seo } from "../components/Seo";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
 
 export function HomePage({ locale }: { locale: LocaleCode }) {
   return (
     <section className="home-intro">
+      <Seo
+        title="d-antes"
+        description={localize(siteContent.home.subtitle, locale)}
+        path="/"
+        locale={locale}
+      />
       <h1>{localize(siteContent.home.title, locale)}</h1>
       <p>{localize(siteContent.home.subtitle, locale)}</p>
       <div className="home-actions">

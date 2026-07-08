@@ -11,12 +11,12 @@ export interface BlogPostSummary {
   author: string;
   tags: string[];
   publishedAtUtc: string;
+  updatedAtUtc: string;
 }
 
 export interface BlogPost extends BlogPostSummary {
   content: string | LocalizedText;
   status: "draft" | "published" | "archived";
-  updatedAtUtc: string;
 }
 
 export interface BlogPostQuery {

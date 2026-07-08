@@ -23,9 +23,6 @@ docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/docker-compose.yml" up -d --
 
 sudo certbot --nginx \
   -d "$PUBLIC_DOMAIN" \
-  -d "$ADMIN_DOMAIN" \
-  -d "$ACCOUNT_DOMAIN" \
-  -d "$DASHBOARD_DOMAIN" \
   --non-interactive \
   --agree-tos \
   -m "$EMAIL" \
