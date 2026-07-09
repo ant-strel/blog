@@ -1,23 +1,9 @@
-import { FormEvent, useState } from "react";
-import type { LocaleCode } from "@template/contracts";
+import type { LocaleCode, LocalizedText } from "@template/contracts";
 import { Seo } from "../components/Seo";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
 
 export function ContactPage({ locale }: { locale: LocaleCode }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
-
-  function submitForm(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setName("");
-    setEmail("");
-    setMessage("");
-    setSent(true);
-  }
-
   return (
     <div className="contact">
       <Seo
@@ -31,68 +17,35 @@ export function ContactPage({ locale }: { locale: LocaleCode }) {
         <p className="subtitle">{localize(siteContent.contact.subtitle, locale)}</p>
       </section>
 
-      <div className="contact-form">
-        <form onSubmit={submitForm}>
-          <div className="form-group">
-            <label htmlFor="contact-name">{localize(siteContent.contact.nameLabel, locale)}</label>
-            <input
-              id="contact-name"
-              className="form-control"
-              value={name}
-              placeholder={localize(siteContent.contact.namePlaceholder, locale)}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </div>
+      <section className="contact-sheet">
+        <div className="contact-intro-card">
+          <p className="contact-kicker">{localize(contactPageCopy.kicker, locale)}</p>
+          <h2>{localize(siteContent.contact.otherWaysTitle, locale)}</h2>
+          <p>{localize(contactPageCopy.summary, locale)}</p>
+        </div>
 
-          <div className="form-group">
-            <label htmlFor="contact-email">{localize(siteContent.contact.emailLabel, locale)}</label>
-            <input
-              id="contact-email"
-              className="form-control"
-              type="email"
-              value={email}
-              placeholder={localize(siteContent.contact.emailPlaceholder, locale)}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="contact-message">{localize(siteContent.contact.messageLabel, locale)}</label>
-            <textarea
-              id="contact-message"
-              className="form-control"
-              rows={5}
-              value={message}
-              placeholder={localize(siteContent.contact.messagePlaceholder, locale)}
-              onChange={(event) => setMessage(event.target.value)}
-            />
-          </div>
-
-          <div className="submit-wrapper">
-            <button className="btn btn-primary" type="submit">
-              {localize(siteContent.contact.submitLabel, locale)}
-            </button>
-          </div>
-        </form>
-
-        {sent && <p className="form-status">{localize(siteContent.contact.sentStatus, locale)}</p>}
-
-        <div className="contact-info">
-          <h3>{localize(siteContent.contact.otherWaysTitle, locale)}</h3>
+        <div className="contact-links">
           {siteContent.contact.methods.map((method) => (
-            <div className="contact-method" key={method.label}>
-              <span className="contact-method-label">{method.label}:</span>
-              {method.href ? (
-                <a href={method.href} target="_blank" rel="noreferrer">
-                  {method.value}
-                </a>
-              ) : (
-                <span>{method.value}</span>
-              )}
-            </div>
+            <a className="contact-link-card" href={method.href} key={method.label} target="_blank" rel="noreferrer">
+              <span className="contact-link-label">{method.label}</span>
+              <span className="contact-link-value">{method.value}</span>
+            </a>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
+
+const contactPageCopy: Record<string, LocalizedText> = {
+  kicker: {
+    en: "Direct outreach only",
+    ru: "Только прямой контакт",
+    es: "Solo contacto directo"
+  },
+  summary: {
+    en: "The page lists the channels that are actually useful for collaboration: source code, professional profile, and messengers. No embedded form means no extra GDPR consent flow, no message storage, and no inbox hidden inside the site.",
+    ru: "Здесь перечислены только те каналы, которые реально работают для общения: исходники, профессиональный профиль и мессенджеры. Без встроенной формы не нужен лишний GDPR-поток согласий, не хранится переписка и не появляется еще один скрытый инбокс внутри сайта.",
+    es: "Aqui se muestran solo los canales que sirven de verdad para colaborar: codigo fuente, perfil profesional y mensajeria. Sin formulario embebido no hace falta un flujo extra de consentimiento, no se guardan mensajes y no nace otro inbox escondido dentro del sitio."
+  }
+};

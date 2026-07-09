@@ -56,7 +56,7 @@ export default function App() {
             title={localize(isDarkTheme ? themeLabels.switchToLight : themeLabels.switchToDark, locale)}
             onClick={() => setTheme(isDarkTheme ? "light" : "dark")}
           >
-            <span aria-hidden="true">{isDarkTheme ? "☀" : "☾"}</span>
+            <span aria-hidden="true">{isDarkTheme ? "\u2600" : "\u263E"}</span>
           </button>
         </div>
       </header>
@@ -87,7 +87,7 @@ type ThemeMode = "light" | "dark";
 const themeLabels = {
   switchToDark: {
     en: "Switch to dark theme",
-    ru: "Переключить на тёмную тему",
+    ru: "Переключить на темную тему",
     es: "Cambiar al tema oscuro"
   },
   switchToLight: {

@@ -34,29 +34,21 @@ export interface SiteContent {
   contact: {
     title: LocalizedText;
     subtitle: LocalizedText;
-    nameLabel: LocalizedText;
-    namePlaceholder: LocalizedText;
-    emailLabel: LocalizedText;
-    emailPlaceholder: LocalizedText;
-    messageLabel: LocalizedText;
-    messagePlaceholder: LocalizedText;
-    submitLabel: LocalizedText;
-    sentStatus: LocalizedText;
     otherWaysTitle: LocalizedText;
     methods: Array<{
       label: string;
       value: string;
-      href?: string;
+      href: string;
     }>;
   };
 }
 
 export const siteContent: SiteContent = {
-  brandName: "Template Project",
+  brandName: "d-antes",
   footerText: {
-    en: "(c) 2026 Template Project",
-    ru: "(c) 2026 Template Project",
-    es: "(c) 2026 Template Project"
+    en: "(c) 2026 d-antes. Engineering notes, product thinking, and calm interfaces.",
+    ru: "(c) 2026 d-antes. Заметки об инженерии, продукте и спокойных интерфейсах.",
+    es: "(c) 2026 d-antes. Notas de ingenieria, producto e interfaces serenas."
   },
   nav: {
     home: {
@@ -70,7 +62,7 @@ export const siteContent: SiteContent = {
       es: "Blog"
     },
     contact: {
-      en: "Contact",
+      en: "Contacts",
       ru: "Контакты",
       es: "Contacto"
     }
@@ -83,28 +75,28 @@ export const siteContent: SiteContent = {
   languages: {
     en: "English",
     ru: "Русский",
-    es: "Español"
+    es: "Espanol"
   },
   home: {
     title: {
-      en: "Minimal blog surface with a protected editor.",
-      ru: "Минималистичный блог с закрытым редактором.",
-      es: "Blog minimalista con editor protegido."
+      en: "Personal blog of a software engineer shipping products, tools, and editorial systems.",
+      ru: "Персональный блог разработчика о продакшене, инструментах и редакционных системах.",
+      es: "Blog personal de un ingeniero de software que entrega productos, herramientas y sistemas editoriales."
     },
     subtitle: {
-      en: "Public articles stay quiet and readable. Drafting, publishing and archive management live in the authenticated editorial area.",
-      ru: "Публичные статьи остаются спокойными и удобными для чтения. Черновики, публикация и архив управляются в закрытой редакторской зоне.",
-      es: "Los artículos públicos son limpios y legibles. Los borradores, la publicación y el archivo se gestionan en el área editorial autenticada."
+      en: "The homepage now reads like a lead article: fewer slogans, more signal about architecture, writing discipline, and how ideas make it into production.",
+      ru: "Главная теперь работает как вводная статья: меньше лозунгов, больше сигнала про архитектуру, дисциплину письма и путь идей до продакшена.",
+      es: "La portada ahora funciona como un articulo principal: menos consignas y mas senal sobre arquitectura, disciplina editorial y paso a produccion."
     },
     blogCta: {
-      en: "Open blog",
-      ru: "Открыть блог",
-      es: "Abrir blog"
+      en: "Read the blog",
+      ru: "Читать блог",
+      es: "Leer el blog"
     },
     contactCta: {
-      en: "Contact",
-      ru: "Контакты",
-      es: "Contacto"
+      en: "Open contacts",
+      ru: "Открыть контакты",
+      es: "Abrir contacto"
     }
   },
   blog: {
@@ -114,14 +106,14 @@ export const siteContent: SiteContent = {
       es: "Blog"
     },
     subtitle: {
-      en: "Articles, notes and product updates.",
-      ru: "Статьи, заметки и обновления проекта.",
-      es: "Artículos, notas y actualizaciones del proyecto."
+      en: "Articles, field notes, launch retrospectives, and decisions made in public.",
+      ru: "Статьи, полевые заметки, ретроспективы запусков и решения, принятые публично.",
+      es: "Articulos, notas de campo, retrospectivas de lanzamientos y decisiones tomadas en publico."
     },
     loading: {
       en: "Loading blog posts...",
       ru: "Загрузка статей...",
-      es: "Cargando artículos..."
+      es: "Cargando articulos..."
     },
     continueReading: {
       en: "Continue reading",
@@ -135,7 +127,7 @@ export const siteContent: SiteContent = {
     },
     next: {
       en: "Next",
-      ru: "Вперёд",
+      ru: "Вперед",
       es: "Siguiente"
     },
     tagsLabel: {
@@ -148,12 +140,12 @@ export const siteContent: SiteContent = {
     loading: {
       en: "Loading article...",
       ru: "Загрузка статьи...",
-      es: "Cargando artículo..."
+      es: "Cargando articulo..."
     },
     notFound: {
       en: "Article not found.",
       ru: "Статья не найдена.",
-      es: "Artículo no encontrado."
+      es: "Articulo no encontrado."
     },
     backToBlog: {
       en: "Back to blog",
@@ -163,79 +155,55 @@ export const siteContent: SiteContent = {
     backToAllPosts: {
       en: "Back to all posts",
       ru: "Все статьи",
-      es: "Todos los artículos"
+      es: "Todos los articulos"
     }
   },
   contact: {
     title: {
-      en: "Contact",
+      en: "Contacts",
       ru: "Контакты",
       es: "Contacto"
     },
     subtitle: {
-      en: "Use the form or reach out through the usual channels.",
-      ru: "Используйте форму или свяжитесь через привычные каналы.",
-      es: "Usa el formulario o escribe por los canales habituales."
-    },
-    nameLabel: {
-      en: "Name",
-      ru: "Имя",
-      es: "Nombre"
-    },
-    namePlaceholder: {
-      en: "Your name",
-      ru: "Ваше имя",
-      es: "Tu nombre"
-    },
-    emailLabel: {
-      en: "Email",
-      ru: "Email",
-      es: "Email"
-    },
-    emailPlaceholder: {
-      en: "your.email@example.com",
-      ru: "your.email@example.com",
-      es: "your.email@example.com"
-    },
-    messageLabel: {
-      en: "Message",
-      ru: "Сообщение",
-      es: "Mensaje"
-    },
-    messagePlaceholder: {
-      en: "Write your message",
-      ru: "Напишите сообщение",
-      es: "Escribe tu mensaje"
-    },
-    submitLabel: {
-      en: "Send message",
-      ru: "Отправить",
-      es: "Enviar"
-    },
-    sentStatus: {
-      en: "Message draft cleared.",
-      ru: "Черновик сообщения очищен.",
-      es: "Borrador del mensaje limpiado."
+      en: "No forms here. Reach out through direct links so the page stays lightweight and does not collect personal data.",
+      ru: "Без форм обратной связи. Только прямые ссылки, чтобы страница оставалась легкой и не собирала персональные данные.",
+      es: "Sin formularios. Solo enlaces directos para mantener la pagina ligera y sin recopilacion de datos personales."
     },
     otherWaysTitle: {
-      en: "Other ways",
-      ru: "Другие способы связи",
-      es: "Otros canales"
+      en: "Direct channels",
+      ru: "Прямые каналы связи",
+      es: "Canales directos"
     },
     methods: [
       {
         label: "Email",
-        value: "your.email@example.com"
-      },
-      {
-        label: "LinkedIn",
-        value: "linkedin.com/in/yourprofile",
-        href: "https://linkedin.com/in/yourprofile"
+        value: "hello@d-antes.dev",
+        href: "mailto:hello@d-antes.dev"
       },
       {
         label: "GitHub",
-        value: "github.com/yourusername",
-        href: "https://github.com/yourusername"
+        value: "github.com/d-antes",
+        href: "https://github.com/d-antes"
+      },
+      {
+        label: "LinkedIn",
+        value: "linkedin.com/in/d-antes",
+        href: "https://www.linkedin.com/in/d-antes"
+      },
+      {
+        label: "Telegram",
+        value: "t.me/dantes_dev",
+        href: "https://t.me/dantes_dev"
+      },
+      {
+        label: "Signal",
+        value: "signal.me/#eu/dantes-dev",
+        href: "https://signal.me/#eu/dantes-dev"
+      },
+      {
+        label: "X / Twitter",
+        value: "x.com/dantes_dev",
+        href: "https://x.com/dantes_dev"
       }
     ]
   }
