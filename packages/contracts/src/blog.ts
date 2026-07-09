@@ -19,6 +19,48 @@ export interface BlogPost extends BlogPostSummary {
   status: "draft" | "published" | "archived";
 }
 
+export type PublicationPlatform =
+  | "habr"
+  | "reddit"
+  | "linkedin"
+  | "telegram"
+  | "github"
+  | "vc"
+  | "pikabu";
+
+export type PublicationVariantStatus = "draft" | "ready" | "published" | "archived";
+
+export type PublicationExportFormat = "markdown" | "html" | "plain" | "telegram_html";
+
+export interface ArticlePublicationVariant {
+  id: string;
+  articleId: string;
+  platform: PublicationPlatform | string;
+  locale: LocaleCode | string;
+  title: string;
+  excerpt: string;
+  contentMarkdown: string;
+  exportFormat: PublicationExportFormat | string;
+  status: PublicationVariantStatus;
+  externalUrl?: string | null;
+  notes?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  publishedAtUtc?: string | null;
+}
+
+export interface ArticlePublicationVariantInput {
+  platform: PublicationPlatform | string;
+  locale: LocaleCode | string;
+  title: string;
+  excerpt: string;
+  contentMarkdown: string;
+  exportFormat: PublicationExportFormat | string;
+  status: PublicationVariantStatus;
+  externalUrl?: string | null;
+  notes?: string | null;
+}
+
 export interface BlogPostQuery {
   page?: number;
   limit?: number;

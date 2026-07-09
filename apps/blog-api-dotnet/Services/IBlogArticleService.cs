@@ -14,4 +14,9 @@ public interface IBlogArticleService
     Task<ArticleStateChangeResponse?> PublishAsync(Guid id, CancellationToken cancellationToken);
     Task<ArticleStateChangeResponse?> ArchiveAsync(Guid id, CancellationToken cancellationToken);
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
+    Task<IList<ArticlePublicationVariantResponse>?> GetPublicationVariantsAsync(Guid articleId, CancellationToken cancellationToken);
+    Task<ArticlePublicationVariantResponse?> GetPublicationVariantAsync(Guid articleId, Guid variantId, CancellationToken cancellationToken);
+    Task<ArticlePublicationVariantResponse?> CreatePublicationVariantAsync(Guid articleId, CreateArticlePublicationVariantRequest request, CancellationToken cancellationToken);
+    Task<ArticlePublicationVariantResponse?> UpdatePublicationVariantAsync(Guid articleId, Guid variantId, UpdateArticlePublicationVariantRequest request, CancellationToken cancellationToken);
+    Task<bool?> DeletePublicationVariantAsync(Guid articleId, Guid variantId, CancellationToken cancellationToken);
 }

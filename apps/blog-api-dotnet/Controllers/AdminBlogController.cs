@@ -89,4 +89,78 @@ public class AdminBlogController : ControllerBase
         var deleted = await _articleService.DeleteAsync(id, cancellationToken);
         return deleted ? NoContent() : NotFound(new { message = "Article not found." });
     }
+
+    [HttpGet("{id:guid}/variants")]
+    [ProducesResponseType(typeof(IList<ArticlePublicationVariantResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListVariants([FromRoute] Guid id, CancellationToken cancellationToken)
+    {
+        var variants = await _articleService.GetPublicationVariantsAsync(id, cancellationToken);
+        return variants is null ? NotFound(new { message = "Article not found." }) : Ok(variants);
+    }
+
+    [HttpGet("{id:guid}/variants/{variantId:guid}")]
+    [ProducesResponseType(typeof(ArticlePublicationVariantResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetVariant(
+        [FromRoute] Guid id,
+        [FromRoute] Guid variantId,
+        CancellationToken cancellationToken)
+    {
+        var variant = await _articleService.GetPublicationVariantAsync(id, variantId, cancellationToken);
+        return variant is null ? NotFound(new { message = "Publication variant not found." }) : Ok(variant);
+    }
+
+    [HttpPost("{id:guid}/variants")]
+    [ProducesResponseType(typeof(ArticlePublicationVariantResponse), StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateVariant(
+        [FromRoute] Guid id,
+        CreateArticlePublicationVariantRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var variant = await _articleService.CreatePublicationVariantAsync(id, request, cancellationToken);
+            return variant is null
+                ? NotFound(new { message = "Article not found." })
+                : CreatedAtAction(nameof(GetVariant), new { id, variantId = variant.Id }, variant);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+    }
+
+    [HttpPut("{id:guid}/variants/{variantId:guid}")]
+    [ProducesResponseType(typeof(ArticlePublicationVariantResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateVariant(
+        [FromRoute] Guid id,
+        [FromRoute] Guid variantId,
+        UpdateArticlePublicationVariantRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var variant = await _articleService.UpdatePublicationVariantAsync(id, variantId, request, cancellationToken);
+            return variant is null ? NotFound(new { message = "Publication variant not found." }) : Ok(variant);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+    }
+
+    [HttpDelete("{id:guid}/variants/{variantId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteVariant(
+        [FromRoute] Guid id,
+        [FromRoute] Guid variantId,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await _articleService.DeletePublicationVariantAsync(id, variantId, cancellationToken);
+        if (deleted is null)
+        {
+            return NotFound(new { message = "Article not found." });
+        }
+
+        return deleted.Value ? NoContent() : NotFound(new { message = "Publication variant not found." });
+    }
 }

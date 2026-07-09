@@ -1,6 +1,14 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import type { BlogPost, LocaleCode, LocalizedText } from "@template/contracts";
+import type {
+  ArticlePublicationVariant,
+  PublicationExportFormat,
+  PublicationPlatform,
+  PublicationVariantStatus,
+  BlogPost,
+  LocaleCode,
+  LocalizedText
+} from "@template/contracts";
 import { MarkdownEditor } from "../components/MarkdownEditor";
 import { Seo } from "../components/Seo";
 import { editorContent } from "../content/editorContent";
@@ -10,7 +18,10 @@ import { useAuth } from "../state/AuthProvider";
 
 const blogClient = createBlogClient();
 const locales: LocaleCode[] = ["en", "ru", "es"];
+const publicationPlatforms: PublicationPlatform[] = ["habr", "reddit", "linkedin", "telegram", "github", "vc", "pikabu"];
 const emptyLocalizedText: LocalizedText = { en: "", ru: "", es: "" };
+const defaultVariantStatus: PublicationVariantStatus = "draft";
+const defaultExportFormat: PublicationExportFormat = "markdown";
 
 export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
   const { articleId } = useParams();
@@ -26,10 +37,24 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [publishOnSave, setPublishOnSave] = useState(true);
+  const [publicationVariants, setPublicationVariants] = useState<ArticlePublicationVariant[]>([]);
+  const [activePlatform, setActivePlatform] = useState<PublicationPlatform>("habr");
+  const [variantTitle, setVariantTitle] = useState("");
+  const [variantExcerpt, setVariantExcerpt] = useState("");
+  const [variantContent, setVariantContent] = useState("");
+  const [variantStatus, setVariantStatus] = useState<PublicationVariantStatus>(defaultVariantStatus);
+  const [variantExportFormat, setVariantExportFormat] = useState<PublicationExportFormat>(defaultExportFormat);
+  const [variantExternalUrl, setVariantExternalUrl] = useState("");
+  const [variantNotes, setVariantNotes] = useState("");
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selectedArticleId = articleId ?? null;
+  const selectedVariant = useMemo(
+    () => publicationVariants.find((variant) => variant.platform === activePlatform && variant.locale === activeLocale) ?? null,
+    [publicationVariants, activePlatform, activeLocale]
+  );
   const availableTags = useMemo(
     () => Array.from(new Set(articles.flatMap((article) => article.tags))).sort(),
     [articles]
@@ -79,6 +104,22 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
       .finally(() => setLoading(false));
   }, [articleId, tokens, locale]);
 
+  useEffect(() => {
+    if (!tokens || !selectedArticleId) {
+      setPublicationVariants([]);
+      resetVariantForm();
+      return;
+    }
+
+    refreshPublicationVariants().catch((caught) => {
+      setError(caught instanceof Error ? caught.message : "Failed to load publication variants.");
+    });
+  }, [selectedArticleId, tokens]);
+
+  useEffect(() => {
+    fillVariantForm(selectedVariant);
+  }, [selectedVariant]);
+
   if (ready && !tokens) {
     return <Navigate to="/blog" replace />;
   }
@@ -93,6 +134,12 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
     setArticles(nextArticles);
   }
 
+  async function refreshPublicationVariants() {
+    if (!tokens || !selectedArticleId) return;
+    const variants = await blogClient.getPublicationVariants(tokens.accessToken, selectedArticleId);
+    setPublicationVariants(variants);
+  }
+
   function fillForm(article: BlogPost) {
     setSlug(article.slug ?? "");
     setTitle(toLocalizedText(article.title));
@@ -102,6 +149,7 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
     setTags(article.tags ?? []);
     setStatus(article.status);
     setPublishOnSave(article.status === "published");
+    setCopyStatus(null);
     setError(null);
   }
 
@@ -116,7 +164,36 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
     setNewTag("");
     setPublishOnSave(true);
     setStatus(null);
+    setPublicationVariants([]);
+    resetVariantForm();
     setError(null);
+  }
+
+  function resetVariantForm() {
+    setVariantTitle("");
+    setVariantExcerpt("");
+    setVariantContent("");
+    setVariantStatus(defaultVariantStatus);
+    setVariantExportFormat(defaultExportFormat);
+    setVariantExternalUrl("");
+    setVariantNotes("");
+    setCopyStatus(null);
+  }
+
+  function fillVariantForm(variant: ArticlePublicationVariant | null) {
+    if (!variant) {
+      resetVariantForm();
+      return;
+    }
+
+    setVariantTitle(variant.title);
+    setVariantExcerpt(variant.excerpt);
+    setVariantContent(variant.contentMarkdown);
+    setVariantStatus(variant.status);
+    setVariantExportFormat(variant.exportFormat as PublicationExportFormat);
+    setVariantExternalUrl(variant.externalUrl ?? "");
+    setVariantNotes(variant.notes ?? "");
+    setCopyStatus(null);
   }
 
   function addTag(tagValue = newTag) {
@@ -216,6 +293,74 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
       setError(caught instanceof Error ? caught.message : localize(editorContent.articleEditor.deleteError, locale));
     } finally {
       setLoading(false);
+    }
+  }
+
+  function createVariantFromBlog() {
+    setVariantTitle(title[activeLocale] ?? "");
+    setVariantExcerpt(excerpt[activeLocale] ?? "");
+    setVariantContent(content[activeLocale] ?? "");
+    setVariantStatus(defaultVariantStatus);
+    setVariantExportFormat(getDefaultExportFormat(activePlatform));
+    setCopyStatus(null);
+  }
+
+  async function savePublicationVariant() {
+    if (!tokens || !selectedArticleId) return;
+    if (!variantTitle.trim() || !variantContent.trim()) {
+      setError("Variant title and content are required.");
+      return;
+    }
+
+    const request = {
+      platform: activePlatform,
+      locale: activeLocale,
+      title: variantTitle,
+      excerpt: variantExcerpt,
+      contentMarkdown: variantContent,
+      exportFormat: variantExportFormat,
+      status: variantStatus,
+      externalUrl: variantExternalUrl || null,
+      notes: variantNotes || null
+    };
+
+    try {
+      setLoading(true);
+      setError(null);
+      if (selectedVariant) {
+        await blogClient.updatePublicationVariant(tokens.accessToken, selectedArticleId, selectedVariant.id, request);
+      } else {
+        await blogClient.createPublicationVariant(tokens.accessToken, selectedArticleId, request);
+      }
+
+      await refreshPublicationVariants();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to save publication variant.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deletePublicationVariant() {
+    if (!tokens || !selectedArticleId || !selectedVariant) return;
+    try {
+      setLoading(true);
+      await blogClient.deletePublicationVariant(tokens.accessToken, selectedArticleId, selectedVariant.id);
+      await refreshPublicationVariants();
+      resetVariantForm();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to delete publication variant.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyPublicationVariant() {
+    try {
+      await navigator.clipboard.writeText(variantContent);
+      setCopyStatus("Copied.");
+    } catch {
+      setCopyStatus("Clipboard is unavailable.");
     }
   }
 
@@ -372,6 +517,125 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
               />
               {localize(editorContent.articleEditor.publishAfterSave, locale)}
             </label>
+            <section className="publication-variants">
+              <div className="section-row compact-section-row">
+                <div>
+                  <span className="eyebrow">External variants</span>
+                  <h3>Platform copy</h3>
+                </div>
+                {!articleId && <p className="muted">Save the article before creating platform variants.</p>}
+              </div>
+              <div className="language-tabs platform-tabs">
+                {publicationPlatforms.map((platform) => {
+                  const hasVariant = publicationVariants.some(
+                    (variant) => variant.platform === platform && variant.locale === activeLocale
+                  );
+                  return (
+                    <button
+                      className={`lang-tab ${activePlatform === platform ? "active" : ""} ${hasVariant ? "has-variant" : ""}`}
+                      type="button"
+                      key={platform}
+                      onClick={() => setActivePlatform(platform)}
+                    >
+                      {formatPlatformName(platform)}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="variant-editor-grid">
+                <label className="field">
+                  <span>Variant title</span>
+                  <input
+                    value={variantTitle}
+                    disabled={!articleId}
+                    onChange={(event) => setVariantTitle(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span>Status</span>
+                  <select
+                    value={variantStatus}
+                    disabled={!articleId}
+                    onChange={(event) => setVariantStatus(event.target.value as PublicationVariantStatus)}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="ready">Ready</option>
+                    <option value="published">Published</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Export format</span>
+                  <select
+                    value={variantExportFormat}
+                    disabled={!articleId}
+                    onChange={(event) => setVariantExportFormat(event.target.value as PublicationExportFormat)}
+                  >
+                    <option value="markdown">Markdown</option>
+                    <option value="html">HTML</option>
+                    <option value="plain">Plain text</option>
+                    <option value="telegram_html">Telegram HTML</option>
+                  </select>
+                </label>
+              </div>
+              <label className="field">
+                <span>Variant excerpt</span>
+                <textarea
+                  rows={2}
+                  value={variantExcerpt}
+                  disabled={!articleId}
+                  onChange={(event) => setVariantExcerpt(event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Variant content</span>
+                <MarkdownEditor
+                  value={variantContent}
+                  labels={markdownLabels}
+                  placeholder="Adapt the article for this platform..."
+                  onChange={setVariantContent}
+                />
+              </label>
+              <div className="variant-editor-grid">
+                <label className="field">
+                  <span>Published URL</span>
+                  <input
+                    value={variantExternalUrl}
+                    disabled={!articleId}
+                    onChange={(event) => setVariantExternalUrl(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span>Notes</span>
+                  <input
+                    value={variantNotes}
+                    disabled={!articleId}
+                    onChange={(event) => setVariantNotes(event.target.value)}
+                  />
+                </label>
+              </div>
+              <p className="muted">
+                Words: {countWords(variantContent)} | Characters: {variantContent.length}
+                {selectedVariant ? ` | Saved variant: ${selectedVariant.status}` : " | No saved variant yet"}
+              </p>
+              {copyStatus && <p className="muted">{copyStatus}</p>}
+              <div className="form-actions">
+                <button className="btn btn-secondary" type="button" disabled={!articleId || loading} onClick={createVariantFromBlog}>
+                  Create from blog
+                </button>
+                <button className="btn btn-primary" type="button" disabled={!articleId || loading} onClick={() => void savePublicationVariant()}>
+                  Save variant
+                </button>
+                <button className="btn btn-secondary" type="button" disabled={!variantContent} onClick={() => void copyPublicationVariant()}>
+                  Copy
+                </button>
+                {selectedVariant && (
+                  <button className="btn btn-secondary" type="button" disabled={loading} onClick={() => void deletePublicationVariant()}>
+                    Delete variant
+                  </button>
+                )}
+              </div>
+            </section>
             {error && <p className="error-text">{error}</p>}
             <div className="form-actions">
               <button className="btn btn-primary" type="submit" disabled={loading}>
@@ -432,5 +696,20 @@ function setLocalizedValue(
     ...current,
     [locale]: value
   }));
+}
+
+function formatPlatformName(platform: string): string {
+  if (platform === "vc") return "VC";
+  return platform.charAt(0).toUpperCase() + platform.slice(1);
+}
+
+function getDefaultExportFormat(platform: PublicationPlatform): PublicationExportFormat {
+  if (platform === "linkedin") return "plain";
+  if (platform === "telegram") return "telegram_html";
+  return "markdown";
+}
+
+function countWords(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
 }
 

@@ -670,6 +670,35 @@ textarea.form-control {
   gap: 16px;
 }
 
+.publication-variants {
+  display: grid;
+  gap: 16px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.platform-tabs {
+  gap: 8px;
+}
+
+.lang-tab.has-variant::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: middle;
+}
+
+.variant-editor-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+}
+
 .rich-editor {
   overflow: hidden;
   border: 1px solid var(--line-strong);
@@ -849,7 +878,8 @@ textarea.form-control {
   }
 
   .editor-container,
-  .editor-meta-grid {
+  .editor-meta-grid,
+  .variant-editor-grid {
     grid-template-columns: 1fr;
   }
 

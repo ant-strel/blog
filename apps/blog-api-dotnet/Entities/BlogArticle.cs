@@ -23,4 +23,6 @@ public class BlogArticle
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public DateTime? PublishedAtUtc { get; set; }
+
+    public ICollection<ArticlePublicationVariant> PublicationVariants { get; set; } = new List<ArticlePublicationVariant>();
 }

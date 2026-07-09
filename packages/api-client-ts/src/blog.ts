@@ -1,4 +1,11 @@
-import type { BlogPost, BlogPostQuery, LocalizedText, PaginatedResult } from "@template/contracts";
+import type {
+  ArticlePublicationVariant,
+  ArticlePublicationVariantInput,
+  BlogPost,
+  BlogPostQuery,
+  LocalizedText,
+  PaginatedResult
+} from "@template/contracts";
 
 export interface CreateAdminArticleRequest {
   slug: string;
@@ -22,6 +29,20 @@ export interface BlogClient {
   publishAdminArticle(accessToken: string, id: string): Promise<void>;
   archiveAdminArticle(accessToken: string, id: string): Promise<void>;
   deleteAdminArticle(accessToken: string, id: string): Promise<void>;
+  getPublicationVariants(accessToken: string, articleId: string): Promise<ArticlePublicationVariant[]>;
+  getPublicationVariant(accessToken: string, articleId: string, variantId: string): Promise<ArticlePublicationVariant>;
+  createPublicationVariant(
+    accessToken: string,
+    articleId: string,
+    request: ArticlePublicationVariantInput
+  ): Promise<ArticlePublicationVariant>;
+  updatePublicationVariant(
+    accessToken: string,
+    articleId: string,
+    variantId: string,
+    request: ArticlePublicationVariantInput
+  ): Promise<ArticlePublicationVariant>;
+  deletePublicationVariant(accessToken: string, articleId: string, variantId: string): Promise<void>;
 }
 
 interface PublicArticleListResponse {
@@ -59,6 +80,23 @@ interface AdminArticleResponse {
   author: string;
   status: "draft" | "published" | "archived";
   tags: string[];
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  publishedAtUtc?: string | null;
+}
+
+interface ArticlePublicationVariantResponse {
+  id: string;
+  articleId: string;
+  platform: string;
+  locale: string;
+  title: string;
+  excerpt: string;
+  contentMarkdown: string;
+  exportFormat: string;
+  status: "draft" | "ready" | "published" | "archived";
+  externalUrl?: string | null;
+  notes?: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
   publishedAtUtc?: string | null;
@@ -162,6 +200,86 @@ export class ApiBlogClient implements BlogClient {
 
   async deleteAdminArticle(accessToken: string, id: string): Promise<void> {
     await this.fetchJson(`/api/admin/blog/articles/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  }
+
+  async getPublicationVariants(accessToken: string, articleId: string): Promise<ArticlePublicationVariant[]> {
+    const response = await this.fetchJson<ArticlePublicationVariantResponse[]>(
+      `/api/admin/blog/articles/${articleId}/variants`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return response.map(mapPublicationVariant);
+  }
+
+  async getPublicationVariant(
+    accessToken: string,
+    articleId: string,
+    variantId: string
+  ): Promise<ArticlePublicationVariant> {
+    const response = await this.fetchJson<ArticlePublicationVariantResponse>(
+      `/api/admin/blog/articles/${articleId}/variants/${variantId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    return mapPublicationVariant(response);
+  }
+
+  async createPublicationVariant(
+    accessToken: string,
+    articleId: string,
+    request: ArticlePublicationVariantInput
+  ): Promise<ArticlePublicationVariant> {
+    const response = await this.fetchJson<ArticlePublicationVariantResponse>(
+      `/api/admin/blog/articles/${articleId}/variants`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(request)
+      }
+    );
+
+    return mapPublicationVariant(response);
+  }
+
+  async updatePublicationVariant(
+    accessToken: string,
+    articleId: string,
+    variantId: string,
+    request: ArticlePublicationVariantInput
+  ): Promise<ArticlePublicationVariant> {
+    const response = await this.fetchJson<ArticlePublicationVariantResponse>(
+      `/api/admin/blog/articles/${articleId}/variants/${variantId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(request)
+      }
+    );
+
+    return mapPublicationVariant(response);
+  }
+
+  async deletePublicationVariant(accessToken: string, articleId: string, variantId: string): Promise<void> {
+    await this.fetchJson(`/api/admin/blog/articles/${articleId}/variants/${variantId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -344,6 +462,68 @@ export class MockBlogClient implements BlogClient {
       mockPosts.splice(index, 1);
     }
   }
+
+  async getPublicationVariants(accessToken: string, articleId: string): Promise<ArticlePublicationVariant[]> {
+    assertMockAuth(accessToken);
+    return mockPublicationVariants.filter((variant) => variant.articleId === articleId);
+  }
+
+  async getPublicationVariant(
+    accessToken: string,
+    articleId: string,
+    variantId: string
+  ): Promise<ArticlePublicationVariant> {
+    assertMockAuth(accessToken);
+    const variant = mockPublicationVariants.find(
+      (item) => item.articleId === articleId && item.id === variantId
+    );
+    if (!variant) throw new Error("Publication variant not found.");
+    return variant;
+  }
+
+  async createPublicationVariant(
+    accessToken: string,
+    articleId: string,
+    request: ArticlePublicationVariantInput
+  ): Promise<ArticlePublicationVariant> {
+    assertMockAuth(accessToken);
+    const now = new Date().toISOString();
+    const variant: ArticlePublicationVariant = {
+      id: `variant-${crypto.randomUUID()}`,
+      articleId,
+      ...request,
+      createdAtUtc: now,
+      updatedAtUtc: now,
+      publishedAtUtc: request.status === "published" ? now : null
+    };
+    mockPublicationVariants.unshift(variant);
+    return variant;
+  }
+
+  async updatePublicationVariant(
+    accessToken: string,
+    articleId: string,
+    variantId: string,
+    request: ArticlePublicationVariantInput
+  ): Promise<ArticlePublicationVariant> {
+    assertMockAuth(accessToken);
+    const variant = mockPublicationVariants.find(
+      (item) => item.articleId === articleId && item.id === variantId
+    );
+    if (!variant) throw new Error("Publication variant not found.");
+    Object.assign(variant, request, { updatedAtUtc: new Date().toISOString() });
+    return variant;
+  }
+
+  async deletePublicationVariant(accessToken: string, articleId: string, variantId: string): Promise<void> {
+    assertMockAuth(accessToken);
+    const index = mockPublicationVariants.findIndex(
+      (item) => item.articleId === articleId && item.id === variantId
+    );
+    if (index >= 0) {
+      mockPublicationVariants.splice(index, 1);
+    }
+  }
 }
 
 function mapPublicArticle(item: PublicArticleResponse | PublicArticleListResponse["items"][number]): BlogPost {
@@ -375,6 +555,27 @@ function mapAdminArticle(item: AdminArticleResponse): BlogPost {
     status: item.status
   };
 }
+
+function mapPublicationVariant(item: ArticlePublicationVariantResponse): ArticlePublicationVariant {
+  return {
+    id: item.id,
+    articleId: item.articleId,
+    platform: item.platform,
+    locale: item.locale,
+    title: item.title,
+    excerpt: item.excerpt,
+    contentMarkdown: item.contentMarkdown,
+    exportFormat: item.exportFormat,
+    status: item.status,
+    externalUrl: item.externalUrl,
+    notes: item.notes,
+    createdAtUtc: item.createdAtUtc,
+    updatedAtUtc: item.updatedAtUtc,
+    publishedAtUtc: item.publishedAtUtc
+  };
+}
+
+const mockPublicationVariants: ArticlePublicationVariant[] = [];
 
 function assertMockAuth(accessToken: string): void {
   if (!accessToken.startsWith("mock-access:")) {

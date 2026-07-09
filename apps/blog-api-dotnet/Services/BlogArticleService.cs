@@ -9,6 +9,9 @@ namespace Blog.Api.Services;
 
 public class BlogArticleService : IBlogArticleService
 {
+    private static readonly string[] AllowedVariantStatuses = ["draft", "ready", "published", "archived"];
+    private static readonly string[] AllowedVariantExportFormats = ["markdown", "html", "plain", "telegram_html"];
+
     private readonly BlogDbContext _dbContext;
 
     public BlogArticleService(BlogDbContext dbContext)
@@ -226,6 +229,151 @@ public class BlogArticleService : IBlogArticleService
         return true;
     }
 
+    public async Task<IList<ArticlePublicationVariantResponse>?> GetPublicationVariantsAsync(
+        Guid articleId,
+        CancellationToken cancellationToken)
+    {
+        if (!await _dbContext.Articles.AnyAsync(article => article.Id == articleId, cancellationToken))
+        {
+            return null;
+        }
+
+        return await _dbContext.PublicationVariants
+            .Where(variant => variant.ArticleId == articleId)
+            .OrderBy(variant => variant.Platform)
+            .ThenBy(variant => variant.Locale)
+            .Select(variant => MapPublicationVariant(variant))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ArticlePublicationVariantResponse?> GetPublicationVariantAsync(
+        Guid articleId,
+        Guid variantId,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.PublicationVariants
+            .Where(variant => variant.ArticleId == articleId && variant.Id == variantId)
+            .Select(variant => MapPublicationVariant(variant))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<ArticlePublicationVariantResponse?> CreatePublicationVariantAsync(
+        Guid articleId,
+        CreateArticlePublicationVariantRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!await _dbContext.Articles.AnyAsync(article => article.Id == articleId, cancellationToken))
+        {
+            return null;
+        }
+
+        var platform = NormalizeRequiredToken(request.Platform, "Platform");
+        var locale = NormalizeRequiredToken(request.Locale, "Locale");
+        var status = NormalizeVariantStatus(request.Status);
+        var exportFormat = NormalizeExportFormat(request.ExportFormat);
+        var duplicate = await _dbContext.PublicationVariants.AnyAsync(
+            variant => variant.ArticleId == articleId && variant.Platform == platform && variant.Locale == locale,
+            cancellationToken);
+
+        if (duplicate)
+        {
+            throw new InvalidOperationException("Publication variant already exists for this platform and locale.");
+        }
+
+        var now = DateTime.UtcNow;
+        var variant = new ArticlePublicationVariant
+        {
+            Id = Guid.NewGuid(),
+            ArticleId = articleId,
+            Platform = platform,
+            Locale = locale,
+            Title = NormalizeRequiredText(request.Title, "Title"),
+            Excerpt = request.Excerpt.Trim(),
+            ContentMarkdown = NormalizeRequiredText(request.ContentMarkdown, "Content"),
+            ExportFormat = exportFormat,
+            Status = status,
+            ExternalUrl = NormalizeOptionalText(request.ExternalUrl),
+            Notes = NormalizeOptionalText(request.Notes),
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now,
+            PublishedAtUtc = status == "published" ? now : null
+        };
+
+        _dbContext.PublicationVariants.Add(variant);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapPublicationVariant(variant);
+    }
+
+    public async Task<ArticlePublicationVariantResponse?> UpdatePublicationVariantAsync(
+        Guid articleId,
+        Guid variantId,
+        UpdateArticlePublicationVariantRequest request,
+        CancellationToken cancellationToken)
+    {
+        var variant = await _dbContext.PublicationVariants.SingleOrDefaultAsync(
+            item => item.ArticleId == articleId && item.Id == variantId,
+            cancellationToken);
+
+        if (variant is null)
+        {
+            return null;
+        }
+
+        var platform = NormalizeRequiredToken(request.Platform, "Platform");
+        var locale = NormalizeRequiredToken(request.Locale, "Locale");
+        var duplicate = await _dbContext.PublicationVariants.AnyAsync(
+            item => item.ArticleId == articleId && item.Id != variantId && item.Platform == platform && item.Locale == locale,
+            cancellationToken);
+
+        if (duplicate)
+        {
+            throw new InvalidOperationException("Publication variant already exists for this platform and locale.");
+        }
+
+        var status = NormalizeVariantStatus(request.Status);
+        variant.Platform = platform;
+        variant.Locale = locale;
+        variant.Title = NormalizeRequiredText(request.Title, "Title");
+        variant.Excerpt = request.Excerpt.Trim();
+        variant.ContentMarkdown = NormalizeRequiredText(request.ContentMarkdown, "Content");
+        variant.ExportFormat = NormalizeExportFormat(request.ExportFormat);
+        variant.Status = status;
+        variant.ExternalUrl = NormalizeOptionalText(request.ExternalUrl);
+        variant.Notes = NormalizeOptionalText(request.Notes);
+        variant.UpdatedAtUtc = DateTime.UtcNow;
+        if (status == "published")
+        {
+            variant.PublishedAtUtc ??= variant.UpdatedAtUtc;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapPublicationVariant(variant);
+    }
+
+    public async Task<bool?> DeletePublicationVariantAsync(
+        Guid articleId,
+        Guid variantId,
+        CancellationToken cancellationToken)
+    {
+        if (!await _dbContext.Articles.AnyAsync(article => article.Id == articleId, cancellationToken))
+        {
+            return null;
+        }
+
+        var variant = await _dbContext.PublicationVariants.SingleOrDefaultAsync(
+            item => item.ArticleId == articleId && item.Id == variantId,
+            cancellationToken);
+
+        if (variant is null)
+        {
+            return false;
+        }
+
+        _dbContext.PublicationVariants.Remove(variant);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     private static BlogArticleAdminResponse MapAdmin(BlogArticle article) => new()
     {
         Id = article.Id,
@@ -250,6 +398,74 @@ public class BlogArticleService : IBlogArticleService
             UpdatedAtUtc = article.UpdatedAtUtc,
             PublishedAtUtc = article.PublishedAtUtc
         };
+    }
+
+    private static ArticlePublicationVariantResponse MapPublicationVariant(ArticlePublicationVariant variant) => new()
+    {
+        Id = variant.Id,
+        ArticleId = variant.ArticleId,
+        Platform = variant.Platform,
+        Locale = variant.Locale,
+        Title = variant.Title,
+        Excerpt = variant.Excerpt,
+        ContentMarkdown = variant.ContentMarkdown,
+        ExportFormat = variant.ExportFormat,
+        Status = variant.Status,
+        ExternalUrl = variant.ExternalUrl,
+        Notes = variant.Notes,
+        CreatedAtUtc = variant.CreatedAtUtc,
+        UpdatedAtUtc = variant.UpdatedAtUtc,
+        PublishedAtUtc = variant.PublishedAtUtc
+    };
+
+    private static string NormalizeRequiredText(string value, string fieldName)
+    {
+        var normalized = value.Trim();
+        if (normalized.Length == 0)
+        {
+            throw new InvalidOperationException($"{fieldName} is required.");
+        }
+
+        return normalized;
+    }
+
+    private static string NormalizeRequiredToken(string value, string fieldName)
+    {
+        var normalized = NormalizeRequiredText(value, fieldName).ToLowerInvariant();
+        if (normalized.Any(character => !(char.IsAsciiLetterOrDigit(character) || character == '_' || character == '-')))
+        {
+            throw new InvalidOperationException($"{fieldName} can contain only letters, digits, dashes and underscores.");
+        }
+
+        return normalized;
+    }
+
+    private static string NormalizeVariantStatus(string value)
+    {
+        var normalized = NormalizeRequiredToken(value, "Status");
+        if (!AllowedVariantStatuses.Contains(normalized))
+        {
+            throw new InvalidOperationException($"Status must be one of: {string.Join(", ", AllowedVariantStatuses)}.");
+        }
+
+        return normalized;
+    }
+
+    private static string NormalizeExportFormat(string value)
+    {
+        var normalized = NormalizeRequiredToken(value, "Export format");
+        if (!AllowedVariantExportFormats.Contains(normalized))
+        {
+            throw new InvalidOperationException($"Export format must be one of: {string.Join(", ", AllowedVariantExportFormats)}.");
+        }
+
+        return normalized;
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        var normalized = value?.Trim();
+        return string.IsNullOrEmpty(normalized) ? null : normalized;
     }
 
     private static string SerializeLocalizedText(IDictionary<string, string> value)

@@ -14,6 +14,8 @@ public class BlogDbContext : DbContext
 
     public DbSet<BlogArticle> Articles => Set<BlogArticle>();
 
+    public DbSet<ArticlePublicationVariant> PublicationVariants => Set<ArticlePublicationVariant>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -39,6 +41,25 @@ public class BlogDbContext : DbContext
             entity.Property(article => article.Tags)
                 .HasConversion(tagsConverter)
                 .Metadata.SetValueComparer(tagsComparer);
+        });
+
+        modelBuilder.Entity<ArticlePublicationVariant>(entity =>
+        {
+            entity.HasKey(variant => variant.Id);
+            entity.HasIndex(variant => new { variant.ArticleId, variant.Platform, variant.Locale }).IsUnique();
+            entity.Property(variant => variant.Platform).HasMaxLength(32).IsRequired();
+            entity.Property(variant => variant.Locale).HasMaxLength(16).IsRequired();
+            entity.Property(variant => variant.Title).HasMaxLength(256).IsRequired();
+            entity.Property(variant => variant.Excerpt).HasMaxLength(1024).IsRequired();
+            entity.Property(variant => variant.ContentMarkdown).IsRequired();
+            entity.Property(variant => variant.ExportFormat).HasMaxLength(32).IsRequired();
+            entity.Property(variant => variant.Status).HasMaxLength(32).IsRequired();
+            entity.Property(variant => variant.ExternalUrl).HasMaxLength(512);
+            entity.Property(variant => variant.Notes).HasMaxLength(2048);
+            entity.HasOne(variant => variant.Article)
+                .WithMany(article => article.PublicationVariants)
+                .HasForeignKey(variant => variant.ArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
