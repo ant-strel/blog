@@ -397,6 +397,16 @@ a {
   border-bottom: none;
 }
 
+.blog-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
 .post-title {
   margin: 0 0 0.5rem;
   font-size: 1.8rem;
@@ -879,6 +889,7 @@ textarea.form-control {
 
   .editor-container,
   .editor-meta-grid,
+  .blog-search,
   .variant-editor-grid {
     grid-template-columns: 1fr;
   }

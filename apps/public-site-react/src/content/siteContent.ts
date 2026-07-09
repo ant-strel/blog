@@ -24,6 +24,10 @@ export interface SiteContent {
     previous: LocalizedText;
     next: LocalizedText;
     tagsLabel: LocalizedText;
+    searchLabel: LocalizedText;
+    searchPlaceholder: LocalizedText;
+    searchSubmit: LocalizedText;
+    searchEmpty: LocalizedText;
   };
   article: {
     loading: LocalizedText;
@@ -134,6 +138,26 @@ export const siteContent: SiteContent = {
       en: "tags",
       ru: "теги",
       es: "etiquetas"
+    },
+    searchLabel: {
+      en: "Search articles",
+      ru: "Поиск по статьям",
+      es: "Buscar articulos"
+    },
+    searchPlaceholder: {
+      en: "Architecture, React, product...",
+      ru: "Архитектура, React, продукт...",
+      es: "Arquitectura, React, producto..."
+    },
+    searchSubmit: {
+      en: "Search",
+      ru: "Искать",
+      es: "Buscar"
+    },
+    searchEmpty: {
+      en: "No articles match this query.",
+      ru: "По этому запросу статей не найдено.",
+      es: "No hay articulos para esta busqueda."
     }
   },
   article: {

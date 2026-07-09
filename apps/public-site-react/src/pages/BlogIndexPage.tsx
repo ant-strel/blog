@@ -1,3 +1,4 @@
+import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { LocaleCode } from "@template/contracts";
 import { useBlogIndex } from "../hooks/useBlog";
@@ -23,7 +24,15 @@ export function BlogIndexPage({ locale }: { locale: LocaleCode }) {
 function PublicBlogIndex({ locale }: { locale: LocaleCode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get("page") ?? "1");
-  const { data, loading, error } = useBlogIndex(page);
+  const query = searchParams.get("q") ?? "";
+  const { data, loading, error } = useBlogIndex(page, query);
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const nextQuery = String(formData.get("q") ?? "").trim();
+    setSearchParams(nextQuery ? { q: nextQuery, page: "1" } : { page: "1" });
+  }
 
   return (
     <div className="blog">
@@ -44,12 +53,30 @@ function PublicBlogIndex({ locale }: { locale: LocaleCode }) {
         <p className="subtitle">{localize(siteContent.blog.subtitle, locale)}</p>
       </section>
 
+      <form className="blog-search" onSubmit={submitSearch}>
+        <label className="field">
+          <span>{localize(siteContent.blog.searchLabel, locale)}</span>
+          <input
+            name="q"
+            type="search"
+            defaultValue={query}
+            placeholder={localize(siteContent.blog.searchPlaceholder, locale)}
+          />
+        </label>
+        <button className="btn btn-primary" type="submit">
+          {localize(siteContent.blog.searchSubmit, locale)}
+        </button>
+      </form>
+
       {loading && <section className="feedback-card">{localize(siteContent.blog.loading, locale)}</section>}
       {error && !loading && <section className="feedback-card error-text">{error}</section>}
 
       {!loading && data && (
         <>
           <section className="blog-list">
+            {data.items.length === 0 && (
+              <section className="feedback-card">{localize(siteContent.blog.searchEmpty, locale)}</section>
+            )}
             {data.items.map((post) => (
               <article className="blog-post" key={post.id}>
                 <h2 className="post-title">
@@ -77,7 +104,7 @@ function PublicBlogIndex({ locale }: { locale: LocaleCode }) {
             <button
               className="btn btn-outline pagination-button"
               disabled={page <= 1}
-              onClick={() => setSearchParams({ page: String(page - 1) })}
+              onClick={() => setSearchParams(query ? { q: query, page: String(page - 1) } : { page: String(page - 1) })}
             >
               {localize(siteContent.blog.previous, locale)}
             </button>
@@ -85,7 +112,7 @@ function PublicBlogIndex({ locale }: { locale: LocaleCode }) {
             <button
               className="btn btn-outline pagination-button"
               disabled={!data.hasMore}
-              onClick={() => setSearchParams({ page: String(page + 1) })}
+              onClick={() => setSearchParams(query ? { q: query, page: String(page + 1) } : { page: String(page + 1) })}
             >
               {localize(siteContent.blog.next, locale)}
             </button>

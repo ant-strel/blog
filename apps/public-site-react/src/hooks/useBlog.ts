@@ -4,7 +4,7 @@ import { createBlogClient } from "../lib/blogClient";
 
 const blogClient = createBlogClient();
 
-export function useBlogIndex(page = 1) {
+export function useBlogIndex(page = 1, search = "") {
   const [data, setData] = useState<PaginatedResult<BlogPost> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +20,7 @@ export function useBlogIndex(page = 1) {
         const result = await blogClient.getPosts({
           page,
           limit: 6,
+          search: search.trim() || undefined,
           publishedOnly: true
         });
 
@@ -41,7 +42,7 @@ export function useBlogIndex(page = 1) {
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [page, search]);
 
   return { data, loading, error };
 }

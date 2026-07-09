@@ -29,10 +29,21 @@ public class BlogArticleService : IBlogArticleService
         if (!string.IsNullOrWhiteSpace(search))
         {
             var needle = search.Trim().ToLowerInvariant();
-            query = query.Where(article =>
-                article.Title.ToLower().Contains(needle) ||
-                article.Excerpt.ToLower().Contains(needle) ||
-                article.Content.ToLower().Contains(needle));
+            if (IsPostgresProvider())
+            {
+                query = query.Where(article =>
+                    EF.Functions.ToTsVector(
+                        "simple",
+                        article.Title + " " + article.Excerpt + " " + article.Content)
+                    .Matches(EF.Functions.PlainToTsQuery("simple", needle)));
+            }
+            else
+            {
+                query = query.Where(article =>
+                    article.Title.ToLower().Contains(needle) ||
+                    article.Excerpt.ToLower().Contains(needle) ||
+                    article.Content.ToLower().Contains(needle));
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(tag))
@@ -466,6 +477,11 @@ public class BlogArticleService : IBlogArticleService
     {
         var normalized = value?.Trim();
         return string.IsNullOrEmpty(normalized) ? null : normalized;
+    }
+
+    private bool IsPostgresProvider()
+    {
+        return string.Equals(_dbContext.Database.ProviderName, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal);
     }
 
     private static string SerializeLocalizedText(IDictionary<string, string> value)
