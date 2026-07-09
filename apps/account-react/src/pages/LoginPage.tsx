@@ -6,7 +6,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -16,7 +16,7 @@ export function LoginPage() {
     try {
       setBusy(true);
       setError(null);
-      await login({ email, password });
+      await login({ login: loginValue, password });
       const redirect = (location.state as { from?: string } | null)?.from ?? "/";
       navigate(redirect);
     } catch (caught) {
@@ -32,8 +32,8 @@ export function LoginPage() {
       <h2>Sign in</h2>
       <form onSubmit={onSubmit} className="form-grid">
         <label className="field">
-          <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} />
+          <span>Login</span>
+          <input autoComplete="username" value={loginValue} onChange={(event) => setLoginValue(event.target.value)} />
         </label>
         <label className="field">
           <span>Password</span>
@@ -49,7 +49,6 @@ export function LoginPage() {
         </button>
       </form>
       <div className="form-links">
-        <Link to="/register">Create account</Link>
         <Link to="/forgot-password">Forgot password</Link>
       </div>
     </section>

@@ -1,6 +1,5 @@
 export interface SessionTokens {
   accessToken: string;
-  refreshToken: string;
   accessTokenExpiresAtUtc: string;
   refreshTokenExpiresAtUtc: string;
 }
@@ -15,41 +14,25 @@ export interface AuthUser {
 }
 
 export interface LoginRequest {
-  email: string;
+  login: string;
   password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-}
-
-export interface RegisterResponse {
-  userId: string;
-  email: string;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
 }
 
 export interface ForgotPasswordRequest {
-  email: string;
+  login: string;
 }
 
 export interface ResetPasswordRequest {
-  email: string;
+  login: string;
   token: string;
   newPassword: string;
 }
 
 export interface RequestEmailConfirmationRequest {
-  email: string;
+  login: string;
 }
 
 export interface ConfirmEmailRequest {
-  email: string;
+  login: string;
   token: string;
 }

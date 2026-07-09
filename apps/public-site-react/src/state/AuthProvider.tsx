@@ -11,7 +11,6 @@ interface AuthContextValue {
 }
 
 const authClient = createAuthClient();
-const storageKey = "template.public.session";
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -20,22 +19,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    const parsed = stored ? JSON.parse(stored) as SessionTokens : null;
-    if (!parsed) {
-      setReady(true);
-      return;
-    }
-
-    authClient.me(parsed.accessToken).then((nextUser) => {
-      localStorage.setItem(storageKey, JSON.stringify(parsed));
-      setTokens(parsed);
-      setUser(nextUser);
-      setReady(true);
+    let cancelled = false;
+    authClient.refresh().then(async (nextTokens) => {
+      const nextUser = await authClient.me(nextTokens.accessToken);
+      if (!cancelled) {
+        setTokens(nextTokens);
+        setUser(nextUser);
+        setReady(true);
+      }
     }).catch(() => {
-      localStorage.removeItem(storageKey);
-      setReady(true);
+      if (!cancelled) {
+        setReady(true);
+      }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -47,17 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         async login(request) {
           const nextTokens = await authClient.login(request);
           const nextUser = await authClient.me(nextTokens.accessToken);
-          localStorage.setItem(storageKey, JSON.stringify(nextTokens));
           setTokens(nextTokens);
           setUser(nextUser);
         },
         async logout() {
           try {
             if (tokens) {
-              await authClient.logout({ refreshToken: tokens.refreshToken }, tokens.accessToken);
+              await authClient.logout(tokens.accessToken);
             }
           } finally {
-            localStorage.removeItem(storageKey);
             setTokens(null);
             setUser(null);
           }

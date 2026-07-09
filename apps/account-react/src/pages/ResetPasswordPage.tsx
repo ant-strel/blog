@@ -4,7 +4,7 @@ import { useAuth } from "../state/AuthProvider";
 
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
-  const [email, setEmail] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -13,7 +13,7 @@ export function ResetPasswordPage() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      const result = await resetPassword({ email, token, newPassword });
+      const result = await resetPassword({ login: loginValue, token, newPassword });
       setError(null);
       setMessage(result.message);
     } catch (caught) {
@@ -27,8 +27,8 @@ export function ResetPasswordPage() {
       <div className="eyebrow">Reset password</div>
       <form className="form-grid" onSubmit={onSubmit}>
         <label className="field">
-          <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} />
+          <span>Login</span>
+          <input autoComplete="username" value={loginValue} onChange={(event) => setLoginValue(event.target.value)} />
         </label>
         <label className="field">
           <span>Token</span>

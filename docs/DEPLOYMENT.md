@@ -322,7 +322,7 @@ set +a
 TOKEN="$(
   curl -s https://d-antes.com/api/auth/login \
     -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$SEED_EDITOR_EMAIL\",\"password\":\"$SEED_EDITOR_PASSWORD\"}" \
+    -d "{\"login\":\"$SEED_EDITOR_EMAIL\",\"password\":\"$SEED_EDITOR_PASSWORD\"}" \
   | jq -r '.accessToken'
 )"
 
@@ -336,12 +336,13 @@ curl -s https://d-antes.com/api/admin/blog/import/markdown \
 
 ## Privacy Deployment Checklist
 
-The intended current privacy posture is a personal blog without public data collection:
+The intended current privacy posture is a public blog with no public self-registration and no public contact-form collection. The protected editor login still processes the seeded editor login, password, refresh cookie, and infrastructure logs:
 
 - Do not add analytics scripts, tracking pixels, comment widgets, embedded social feeds, maps, or third-party players without reassessing cookies and personal data processing.
 - Do not add public contact forms unless a privacy policy and consent flow are added.
-- Keep editor admin login available by direct URL only; do not add it to public navigation.
+- Keep editor admin login available by direct URL only; do not add it to public navigation or re-enable public registration.
 - Keep API services internal to Docker and exposed only through `public-site` same-origin proxy.
+- Keep refresh tokens in the auth API `HttpOnly` cookie flow; do not put refresh tokens back into JSON responses or browser storage.
 - Remember that nginx and hosting infrastructure can still produce access logs.
 
 ## Troubleshooting

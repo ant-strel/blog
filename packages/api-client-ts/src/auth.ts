@@ -3,9 +3,6 @@ import type {
   ConfirmEmailRequest,
   ForgotPasswordRequest,
   LoginRequest,
-  RefreshTokenRequest,
-  RegisterRequest,
-  RegisterResponse,
   RequestEmailConfirmationRequest,
   ResetPasswordRequest,
   SessionTokens
@@ -13,15 +10,14 @@ import type {
 
 export interface AuthClient {
   login(request: LoginRequest): Promise<SessionTokens>;
-  register(request: RegisterRequest): Promise<RegisterResponse>;
   me(accessToken: string): Promise<AuthUser>;
-  refresh(request: RefreshTokenRequest): Promise<SessionTokens>;
-  logout(request: RefreshTokenRequest, accessToken: string): Promise<void>;
-  forgotPassword(request: ForgotPasswordRequest): Promise<{ message: string; token?: string }>;
+  refresh(): Promise<SessionTokens>;
+  logout(accessToken: string): Promise<void>;
+  forgotPassword(request: ForgotPasswordRequest): Promise<{ message: string }>;
   resetPassword(request: ResetPasswordRequest): Promise<{ message: string }>;
   requestEmailConfirmation(
     request: RequestEmailConfirmationRequest
-  ): Promise<{ message: string; token?: string }>;
+  ): Promise<{ message: string }>;
   confirmEmail(request: ConfirmEmailRequest): Promise<{ message: string }>;
 }
 
@@ -36,10 +32,6 @@ export class ApiAuthClient implements AuthClient {
     return this.post<SessionTokens>("/api/auth/login", request);
   }
 
-  async register(request: RegisterRequest): Promise<RegisterResponse> {
-    return this.post<RegisterResponse>("/api/auth/register", request);
-  }
-
   async me(accessToken: string): Promise<AuthUser> {
     return this.fetchJson<AuthUser>("/api/auth/me", {
       headers: {
@@ -48,24 +40,23 @@ export class ApiAuthClient implements AuthClient {
     });
   }
 
-  async refresh(request: RefreshTokenRequest): Promise<SessionTokens> {
-    return this.post<SessionTokens>("/api/auth/refresh", request);
+  async refresh(): Promise<SessionTokens> {
+    return this.post<SessionTokens>("/api/auth/refresh");
   }
 
-  async logout(request: RefreshTokenRequest, accessToken: string): Promise<void> {
+  async logout(accessToken: string): Promise<void> {
     await this.fetchJson<void>("/api/auth/logout", {
       method: "POST",
       headers: {
         ...jsonHeaders,
         Authorization: `Bearer ${accessToken}`
-      },
-      body: JSON.stringify(request)
+      }
     });
   }
 
   async forgotPassword(
     request: ForgotPasswordRequest
-  ): Promise<{ message: string; token?: string }> {
+  ): Promise<{ message: string }> {
     return this.post("/api/auth/forgot-password", request);
   }
 
@@ -75,7 +66,7 @@ export class ApiAuthClient implements AuthClient {
 
   async requestEmailConfirmation(
     request: RequestEmailConfirmationRequest
-  ): Promise<{ message: string; token?: string }> {
+  ): Promise<{ message: string }> {
     return this.post("/api/auth/request-email-confirmation", request);
   }
 
@@ -83,16 +74,19 @@ export class ApiAuthClient implements AuthClient {
     return this.post("/api/auth/confirm-email", request);
   }
 
-  private async post<T>(path: string, body: unknown): Promise<T> {
+  private async post<T>(path: string, body?: unknown): Promise<T> {
     return this.fetchJson<T>(path, {
       method: "POST",
       headers: jsonHeaders,
-      body: JSON.stringify(body)
+      body: body === undefined ? undefined : JSON.stringify(body)
     });
   }
 
   private async fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(new URL(path, this.baseUrl), init);
+    const response = await fetch(new URL(path, this.baseUrl), {
+      ...init,
+      credentials: "include"
+    });
     if (!response.ok) {
       const message = await readErrorMessage(response);
       throw new Error(message);
@@ -113,45 +107,30 @@ interface MockUserRecord {
 }
 
 const mockUsers = new Map<string, MockUserRecord>();
+mockUsers.set("editor@example.com", {
+  user: {
+    id: "mock-editor",
+    email: "editor@example.com",
+    firstName: "Editorial",
+    lastName: "Owner",
+    isActive: true,
+    roles: ["Editor", "Admin"]
+  },
+  password: "Editor123!",
+  emailConfirmed: true
+});
 
 const refreshTokens = new Map<string, string>();
 
 export class MockAuthClient implements AuthClient {
   async login(request: LoginRequest): Promise<SessionTokens> {
     await delay(180);
-    const record = mockUsers.get(request.email.toLowerCase());
+    const record = mockUsers.get(request.login.toLowerCase());
     if (!record || record.password !== request.password || !record.emailConfirmed) {
       throw new Error("Invalid credentials.");
     }
 
     return issueMockTokens(record.user.id);
-  }
-
-  async register(request: RegisterRequest): Promise<RegisterResponse> {
-    await delay(180);
-    const email = request.email.toLowerCase();
-    if (mockUsers.has(email)) {
-      throw new Error("Email is already registered.");
-    }
-
-    const userId = `u-${crypto.randomUUID()}`;
-    mockUsers.set(email, {
-      user: {
-        id: userId,
-        email,
-        firstName: request.firstName,
-        lastName: request.lastName,
-        isActive: true,
-        roles: ["User"]
-      },
-      password: request.password,
-      emailConfirmed: false
-    });
-
-    return {
-      userId,
-      email
-    };
   }
 
   async me(accessToken: string): Promise<AuthUser> {
@@ -165,35 +144,34 @@ export class MockAuthClient implements AuthClient {
     return record.user;
   }
 
-  async refresh(request: RefreshTokenRequest): Promise<SessionTokens> {
+  async refresh(): Promise<SessionTokens> {
     await delay(80);
-    const userId = refreshTokens.get(request.refreshToken);
+    const currentRefreshToken = Array.from(refreshTokens.keys()).at(-1);
+    const userId = currentRefreshToken ? refreshTokens.get(currentRefreshToken) : undefined;
     if (!userId) {
       throw new Error("Invalid refresh token.");
     }
 
-    return issueMockTokens(userId, request.refreshToken);
+    return issueMockTokens(userId, currentRefreshToken);
   }
 
-  async logout(request: RefreshTokenRequest): Promise<void> {
+  async logout(): Promise<void> {
     await delay(60);
-    refreshTokens.delete(request.refreshToken);
+    refreshTokens.clear();
   }
 
   async forgotPassword(
     request: ForgotPasswordRequest
-  ): Promise<{ message: string; token?: string }> {
+  ): Promise<{ message: string }> {
     await delay(120);
-    const record = mockUsers.get(request.email.toLowerCase());
     return {
-      message: "If the account exists, a reset token was generated.",
-      token: record ? `reset-${record.user.id}` : undefined
+      message: "If the account exists, a reset token was generated."
     };
   }
 
   async resetPassword(request: ResetPasswordRequest): Promise<{ message: string }> {
     await delay(120);
-    const record = mockUsers.get(request.email.toLowerCase());
+    const record = mockUsers.get(request.login.toLowerCase());
     if (!record || request.token !== `reset-${record.user.id}`) {
       throw new Error("Invalid email or token.");
     }
@@ -204,18 +182,16 @@ export class MockAuthClient implements AuthClient {
 
   async requestEmailConfirmation(
     request: RequestEmailConfirmationRequest
-  ): Promise<{ message: string; token?: string }> {
+  ): Promise<{ message: string }> {
     await delay(120);
-    const record = mockUsers.get(request.email.toLowerCase());
     return {
-      message: "If the account exists, a confirmation token was generated.",
-      token: record ? `confirm-${record.user.id}` : undefined
+      message: "If the account exists, a confirmation token was generated."
     };
   }
 
   async confirmEmail(request: ConfirmEmailRequest): Promise<{ message: string }> {
     await delay(120);
-    const record = mockUsers.get(request.email.toLowerCase());
+    const record = mockUsers.get(request.login.toLowerCase());
     if (!record || request.token !== `confirm-${record.user.id}`) {
       throw new Error("Invalid email or token.");
     }
@@ -245,7 +221,6 @@ function issueMockTokens(userId: string, currentRefreshToken?: string): SessionT
 
   return {
     accessToken,
-    refreshToken,
     accessTokenExpiresAtUtc: new Date(Date.now() + 1000 * 60 * 15).toISOString(),
     refreshTokenExpiresAtUtc: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString()
   };

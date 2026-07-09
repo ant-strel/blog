@@ -5,8 +5,6 @@ import type {
   ForgotPasswordRequest,
   LoginRequest,
   RequestEmailConfirmationRequest,
-  RefreshTokenRequest,
-  RegisterRequest,
   ResetPasswordRequest,
   SessionTokens
 } from "@template/contracts";
@@ -20,19 +18,17 @@ interface SessionState {
 
 interface AuthContextValue extends SessionState {
   login(request: LoginRequest): Promise<void>;
-  register(request: RegisterRequest): Promise<{ userId: string; email: string }>;
   logout(): Promise<void>;
-  forgotPassword(request: ForgotPasswordRequest): Promise<{ message: string; token?: string }>;
+  forgotPassword(request: ForgotPasswordRequest): Promise<{ message: string }>;
   requestEmailConfirmation(
     request: RequestEmailConfirmationRequest
-  ): Promise<{ message: string; token?: string }>;
+  ): Promise<{ message: string }>;
   confirmEmail(request: ConfirmEmailRequest): Promise<{ message: string }>;
   resetPassword(request: ResetPasswordRequest): Promise<{ message: string }>;
   refresh(): Promise<void>;
 }
 
 const authClient = createAuthClient();
-const storageKey = "template.account.session";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -45,22 +41,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const stored = localStorage.getItem(storageKey);
-    if (!stored) {
-      setState((current) => ({ ...current, ready: true }));
-      return;
-    }
-
-    const parsed = JSON.parse(stored) as SessionTokens;
     authClient
-      .me(parsed.accessToken)
-      .then((user) => {
+      .refresh()
+      .then(async (tokens) => {
+        const user = await authClient.me(tokens.accessToken);
+        return { tokens, user };
+      })
+      .then((session) => {
         if (!cancelled) {
-          setState({ user, tokens: parsed, ready: true });
+          setState({ user: session.user, tokens: session.tokens, ready: true });
         }
       })
       .catch(() => {
-        localStorage.removeItem(storageKey);
         if (!cancelled) {
           setState({ user: null, tokens: null, ready: true });
         }
@@ -76,21 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async login(request) {
       const tokens = await authClient.login(request);
       const user = await authClient.me(tokens.accessToken);
-      localStorage.setItem(storageKey, JSON.stringify(tokens));
       setState({ user, tokens, ready: true });
-    },
-    async register(request) {
-      return authClient.register(request);
     },
     async logout() {
       if (state.tokens) {
-        await authClient.logout(
-          { refreshToken: state.tokens.refreshToken },
-          state.tokens.accessToken
-        );
+        await authClient.logout(state.tokens.accessToken);
       }
 
-      localStorage.removeItem(storageKey);
       setState({ user: null, tokens: null, ready: true });
     },
     forgotPassword(request) {
@@ -110,11 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("No active session.");
       }
 
-      const tokens = await authClient.refresh({
-        refreshToken: state.tokens.refreshToken
-      } satisfies RefreshTokenRequest);
+      const tokens = await authClient.refresh();
       const user = await authClient.me(tokens.accessToken);
-      localStorage.setItem(storageKey, JSON.stringify(tokens));
       setState({ user, tokens, ready: true });
     }
   };

@@ -6,6 +6,7 @@ using AuthServer.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -13,8 +14,10 @@ namespace AuthServer.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting("AuthSensitive")]
 public class AuthController : ControllerBase
 {
+    private const string RefreshTokenCookieName = "refresh_token";
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ITokenService _tokenService;
@@ -32,54 +35,12 @@ public class AuthController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpPost("register")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Register(RegisterRequest request)
-    {
-        var existingUser = await _userManager.FindByEmailAsync(request.Email);
-        if (existingUser is not null)
-        {
-            return BadRequest(new { message = "Email is already registered." });
-        }
-
-        var user = new ApplicationUser
-        {
-            Id = Guid.NewGuid(),
-            UserName = request.Email,
-            Email = request.Email,
-            EmailConfirmed = false,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            IsActive = true,
-            CreatedAtUtc = DateTime.UtcNow
-        };
-
-        var createResult = await _userManager.CreateAsync(user, request.Password);
-        if (!createResult.Succeeded)
-        {
-            return BadRequest(new
-            {
-                message = "User registration failed.",
-                errors = createResult.Errors.Select(error => error.Description)
-            });
-        }
-
-        await _userManager.AddToRoleAsync(user, "User");
-
-        return CreatedAtAction(nameof(Me), new RegisterResponse
-        {
-            UserId = user.Id,
-            Email = user.Email ?? string.Empty
-        });
-    }
-
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await FindUserByLoginAsync(request.Login);
         if (user is null || !user.IsActive || !user.EmailConfirmed)
         {
             return Unauthorized(new { message = "Invalid credentials." });
@@ -96,15 +57,22 @@ public class AuthController : ControllerBase
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             cancellationToken);
 
+        SetRefreshTokenCookie(tokenResponse.RefreshToken, tokenResponse.RefreshTokenExpiresAtUtc);
         return Ok(tokenResponse);
     }
 
     [HttpPost("refresh")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {
-        var refreshTokenHash = _tokenService.HashToken(request.RefreshToken);
+        var refreshTokenValue = Request.Cookies[RefreshTokenCookieName];
+        if (string.IsNullOrWhiteSpace(refreshTokenValue))
+        {
+            return Unauthorized(new { message = "Invalid refresh token." });
+        }
+
+        var refreshTokenHash = _tokenService.HashToken(refreshTokenValue);
         var refreshToken = await _dbContext.RefreshTokens
             .Include(token => token.User)
             .SingleOrDefaultAsync(token => token.TokenHash == refreshTokenHash, cancellationToken);
@@ -125,31 +93,38 @@ public class AuthController : ControllerBase
         refreshToken.ReplacedByTokenHash = _tokenService.HashToken(tokenResponse.RefreshToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        SetRefreshTokenCookie(tokenResponse.RefreshToken, tokenResponse.RefreshTokenExpiresAtUtc);
         return Ok(tokenResponse);
     }
 
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Logout(RefreshTokenRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         var userIdRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userIdRaw, out var userId))
         {
+            DeleteRefreshTokenCookie();
             return NoContent();
         }
 
-        var refreshTokenHash = _tokenService.HashToken(request.RefreshToken);
-        var refreshToken = await _dbContext.RefreshTokens
-            .SingleOrDefaultAsync(token => token.TokenHash == refreshTokenHash && token.UserId == userId, cancellationToken);
-
-        if (refreshToken is not null && refreshToken.IsActive)
+        var refreshTokenValue = Request.Cookies[RefreshTokenCookieName];
+        if (!string.IsNullOrWhiteSpace(refreshTokenValue))
         {
-            refreshToken.RevokedAtUtc = DateTime.UtcNow;
-            refreshToken.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            var refreshTokenHash = _tokenService.HashToken(refreshTokenValue);
+            var refreshToken = await _dbContext.RefreshTokens
+                .SingleOrDefaultAsync(token => token.TokenHash == refreshTokenHash && token.UserId == userId, cancellationToken);
+
+            if (refreshToken is not null && refreshToken.IsActive)
+            {
+                refreshToken.RevokedAtUtc = DateTime.UtcNow;
+                refreshToken.RevokedByIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
         }
 
+        DeleteRefreshTokenCookie();
         return NoContent();
     }
 
@@ -157,29 +132,24 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> RequestEmailConfirmation(RequestEmailConfirmationRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await FindUserByLoginAsync(request.Login);
         if (user is null || user.EmailConfirmed)
         {
             return Ok(new { message = "If the account exists, a confirmation token was generated." });
         }
 
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        return Ok(new
-        {
-            message = "Email confirmation token generated.",
-            email = user.Email,
-            token
-        });
+        await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        return Ok(new { message = "If the account exists, a confirmation token was generated." });
     }
 
     [HttpPost("confirm-email")]
     [AllowAnonymous]
     public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await FindUserByLoginAsync(request.Login);
         if (user is null)
         {
-            return BadRequest(new { message = "Invalid email or token." });
+            return BadRequest(new { message = "Invalid login or token." });
         }
 
         var result = await _userManager.ConfirmEmailAsync(user, request.Token);
@@ -199,29 +169,24 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await FindUserByLoginAsync(request.Login);
         if (user is null || !user.EmailConfirmed)
         {
             return Ok(new { message = "If the account exists, a reset token was generated." });
         }
 
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        return Ok(new
-        {
-            message = "Password reset token generated.",
-            email = user.Email,
-            token
-        });
+        await _userManager.GeneratePasswordResetTokenAsync(user);
+        return Ok(new { message = "If the account exists, a reset token was generated." });
     }
 
     [HttpPost("reset-password")]
     [AllowAnonymous]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await FindUserByLoginAsync(request.Login);
         if (user is null)
         {
-            return BadRequest(new { message = "Invalid email or token." });
+            return BadRequest(new { message = "Invalid login or token." });
         }
 
         var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
@@ -264,5 +229,33 @@ public class AuthController : ControllerBase
             IsActive = user.IsActive,
             Roles = roles
         });
+    }
+
+    private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAtUtc)
+    {
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Path = "/api/auth",
+            Expires = expiresAtUtc
+        });
+    }
+
+    private void DeleteRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
+        {
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Path = "/api/auth"
+        });
+    }
+
+    private async Task<ApplicationUser?> FindUserByLoginAsync(string login)
+    {
+        var normalizedLogin = login.Trim();
+        return await _userManager.FindByNameAsync(normalizedLogin) ?? await _userManager.FindByEmailAsync(normalizedLogin);
     }
 }

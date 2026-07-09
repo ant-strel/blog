@@ -6,7 +6,7 @@ import { useAuth } from "../state/AuthProvider";
 export function LoginPage() {
   const { ready, tokens, login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function LoginPage() {
     setBusy(true);
 
     try {
-      await login({ email, password });
+      await login({ login: loginValue, password });
       navigate("/blog", { replace: true });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Login failed.");
@@ -42,11 +42,11 @@ export function LoginPage() {
       <h1>Editor sign in</h1>
       <form className="form-grid" onSubmit={onSubmit}>
         <label className="field">
-          <span>Email</span>
+          <span>Login</span>
           <input
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="username"
+            value={loginValue}
+            onChange={(event) => setLoginValue(event.target.value)}
             required
           />
         </label>

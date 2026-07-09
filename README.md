@@ -368,7 +368,7 @@ docker compose --env-file deploy/.env.production logs -f admin-site
 Если после входа editor получает `401` на admin blog endpoints:
 
 - пересоздай `auth-api`, `blog-api`, `admin-site`;
-- очисти `localStorage` для admin-домена или сделай logout/login;
+- очисти cookie `refresh_token` для admin-домена или сделай logout/login;
 - проверь, что `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_SECRET_KEY` одинаковые для `auth-api` и `blog-api`.
 
 ## Кастомизация Контента
@@ -425,7 +425,7 @@ DASHBOARD_SITE_PORT=18083
 docker compose up --build postgres auth-api blog-api public-site admin-site account-site dashboard-site
 ```
 
-Cross-app frontend links are also derived from these same port variables during Docker build, so admin/account/dashboard navigation stays on the published Docker ports instead of falling back to Vite `localhost:517x`. The public site does not expose an account/login menu entry; login remains available only by direct account URL.
+Cross-app frontend links are also derived from these same port variables during Docker build, so admin/account/dashboard navigation stays on the published Docker ports instead of falling back to Vite `localhost:517x`. The public site does not expose an account/login menu entry, and public registration is disabled; editor login remains available only by direct URL.
 
 The editor account is seeded by `auth-api` into the auth database on startup. For Docker runs, override it with runtime environment variables:
 
@@ -436,7 +436,7 @@ SEED_EDITOR_FIRST_NAME=Editorial
 SEED_EDITOR_LAST_NAME=Owner
 ```
 
-The same values map to ASP.NET configuration keys `Seed__EditorEmail`, `Seed__EditorPassword`, `Seed__EditorFirstName`, and `Seed__EditorLastName`. React login forms do not embed these credentials.
+The same values map to ASP.NET configuration keys `Seed__EditorEmail`, `Seed__EditorPassword`, `Seed__EditorFirstName`, and `Seed__EditorLastName`. React login forms label the identifier as `Login` and do not embed these credentials.
 
 Auth and blog APIs must share the same JWT settings. Docker Compose wires these into both services; override them together if needed:
 

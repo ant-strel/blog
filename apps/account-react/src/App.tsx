@@ -2,7 +2,6 @@ import { Link, Route, Routes } from "react-router-dom";
 import { resolveAppUrl } from "@template/api-client-ts";
 import { RequireAuth } from "./state/RequireAuth";
 import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { AccountHomePage } from "./pages/AccountHomePage";
@@ -20,13 +19,11 @@ export default function App() {
         <nav className="public-nav">
           <a href={publicAppUrl}>Public</a>
           <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
         </nav>
       </header>
 
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>

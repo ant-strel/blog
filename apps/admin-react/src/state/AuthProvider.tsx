@@ -11,7 +11,6 @@ interface AuthContextValue {
 }
 
 const authClient = createAuthClient();
-const storageKey = "template.admin.session";
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -20,20 +19,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (!stored) {
-      setReady(true);
-      return;
-    }
-
-    const parsed = JSON.parse(stored) as SessionTokens;
-    authClient.me(parsed.accessToken).then(setUser).then(() => {
-      setTokens(parsed);
-      setReady(true);
+    let cancelled = false;
+    authClient.refresh().then(async (nextTokens) => {
+      const nextUser = await authClient.me(nextTokens.accessToken);
+      if (!cancelled) {
+        setUser(nextUser);
+        setTokens(nextTokens);
+        setReady(true);
+      }
     }).catch(() => {
-      localStorage.removeItem(storageKey);
-      setReady(true);
+      if (!cancelled) {
+        setReady(true);
+      }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -45,16 +47,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         async login(request) {
           const nextTokens = await authClient.login(request);
           const nextUser = await authClient.me(nextTokens.accessToken);
-          localStorage.setItem(storageKey, JSON.stringify(nextTokens));
           setTokens(nextTokens);
           setUser(nextUser);
         },
         async logout() {
           if (tokens) {
-            await authClient.logout({ refreshToken: tokens.refreshToken }, tokens.accessToken);
+            await authClient.logout(tokens.accessToken);
           }
 
-          localStorage.removeItem(storageKey);
           setTokens(null);
           setUser(null);
         }

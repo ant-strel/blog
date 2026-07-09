@@ -4,15 +4,13 @@ import { useAuth } from "../state/AuthProvider";
 
 export function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();
-  const [email, setEmail] = useState("");
+  const [loginValue, setLoginValue] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = await forgotPassword({ email });
+    const result = await forgotPassword({ login: loginValue });
     setMessage(result.message);
-    setToken(result.token ?? null);
   }
 
   return (
@@ -20,15 +18,14 @@ export function ForgotPasswordPage() {
       <div className="eyebrow">Password recovery</div>
       <form className="form-grid" onSubmit={onSubmit}>
         <label className="field">
-          <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} />
+          <span>Login</span>
+          <input autoComplete="username" value={loginValue} onChange={(event) => setLoginValue(event.target.value)} />
         </label>
         <button className="btn btn-primary" type="submit">
-          Generate reset token
+          Request reset
         </button>
       </form>
       {message && <p>{message}</p>}
-      {token && <p className="muted">Mock token for the first slice: {token}</p>}
       <div className="form-links">
         <Link to="/reset-password">Reset password</Link>
       </div>

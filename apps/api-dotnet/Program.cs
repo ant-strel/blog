@@ -5,11 +5,14 @@ using AuthServer.Api.Extensions;
 using AuthServer.Api.Options;
 using AuthServer.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -19,6 +22,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
 builder.Services.AddApiBehavior();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
@@ -101,12 +110,30 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(corsOptions.AllowedOrigins)
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
         }
     });
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("AuthSensitive", httpContext =>
+    {
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthSeeder, AuthSeeder>();
 builder.Services.AddSingleton<ISyntheticDashboardService, SyntheticDashboardService>();
@@ -141,10 +168,16 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 app.UseExceptionHandler();
-app.UseSwagger();
-app.UseSwaggerUI();
+app.UseForwardedHeaders();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseCors(corsPolicyName);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
