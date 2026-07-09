@@ -322,7 +322,7 @@ set +a
 TOKEN="$(
   curl -s https://d-antes.com/api/auth/login \
     -H 'Content-Type: application/json' \
-    -d "{\"login\":\"$SEED_EDITOR_EMAIL\",\"password\":\"$SEED_EDITOR_PASSWORD\"}" \
+    -d "{\"email\":\"$SEED_EDITOR_EMAIL\",\"password\":\"$SEED_EDITOR_PASSWORD\"}" \
   | jq -r '.accessToken'
 )"
 

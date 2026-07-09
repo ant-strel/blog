@@ -198,6 +198,71 @@ ARTICLE_EXPORT_GOOGLE_DRIVE_REMOTE="gdrive:d-antes/articles" \
   bash ops/articles/sync-markdown-backups.sh
 ```
 
+### Restore Articles On Another VPS
+
+The article database can be restored from markdown backups after deploying the app on another VPS. This restore is explicit and is not run automatically by `deploy.sh`, so a deploy cannot accidentally overwrite an existing production database.
+
+What is restored from markdown backups:
+
+- blog articles, slugs, statuses, authors, tags, timestamps;
+- localized blog content for `ru`, `en`, `es`;
+- external publication variants for Habr, Reddit, LinkedIn, Telegram, GitHub, VC, Pikabu, and other saved platforms.
+
+What is not restored from markdown backups:
+
+- auth database and editor account; the editor is created from `SEED_EDITOR_*`;
+- full PostgreSQL state; use `postgres-backup`/S3 restore for full database recovery;
+- nginx, SSH keys, rclone config, and VPS system settings.
+
+New VPS restore flow:
+
+```bash
+cd /opt/apps/personal_page_vue
+git pull origin main
+docker compose --env-file deploy/.env.production up -d --build --remove-orphans
+```
+
+Restore markdown files from the article GitHub repository:
+
+```bash
+sudo mkdir -p /opt/backups
+sudo chown "$USER":"$USER" /opt/backups
+git clone git@github.com:ant-strel/articles.git /opt/backups/articles
+rsync -a --delete --exclude '.git/' /opt/backups/articles/ /opt/apps/personal_page_vue/content/articles/
+```
+
+Or restore markdown files from Google Drive:
+
+```bash
+cd /opt/apps/personal_page_vue
+rclone sync gdrive:d-antes/articles content/articles --create-empty-src-dirs
+```
+
+Call the protected import endpoint:
+
+```bash
+cd /opt/apps/personal_page_vue
+sudo apt-get install -y jq
+
+set -a
+source deploy/.env.production
+set +a
+
+TOKEN="$(
+  curl -s https://d-antes.com/api/auth/login \
+    -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$SEED_EDITOR_EMAIL\",\"password\":\"$SEED_EDITOR_PASSWORD\"}" \
+  | jq -r '.accessToken'
+)"
+
+curl -s https://d-antes.com/api/admin/blog/import/markdown \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"pruneMissing":true}'
+```
+
+Use `pruneMissing=true` for disaster recovery when the target blog database must match the backup exactly. Use `false` when importing backup articles into an existing database without deleting other articles.
+
 ### Important Current Files
 
 - `apps/public-site-react/server.mjs` - production Node server, API proxy, SEO shell, robots, sitemap.
