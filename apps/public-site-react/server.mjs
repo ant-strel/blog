@@ -61,6 +61,16 @@ createServer(async (request, response) => {
       return;
     }
 
+    if (pathname === "/login") {
+      sendHtml(response, 404, renderShell({
+        title: `Not found | ${siteName}`,
+        description: "The requested page was not found.",
+        canonicalPath: "/",
+        noIndex: true
+      }));
+      return;
+    }
+
     const articleMatch = pathname.match(/^\/blog\/([^/]+)\/?$/);
     if (articleMatch && !pathname.startsWith("/blog/editor")) {
       const html = await renderArticleShell(articleMatch[1], response);
@@ -267,6 +277,7 @@ function renderRobots() {
     "User-agent: *",
     "Allow: /",
     "Disallow: /admin",
+    "Disallow: /login",
     "Disallow: /blog/editor/",
     "Disallow: /api/",
     "",
