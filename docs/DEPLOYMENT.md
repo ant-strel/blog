@@ -211,9 +211,9 @@ Docker mounts it into `blog-api` as:
 
 Recommended production flow:
 
-1. In the editor, click `Export markdown`.
-2. On the VPS, run `ops/articles/sync-markdown-backups.sh`.
-3. The script commits generated markdown and optionally mirrors it to another git repository and Google Drive.
+1. The API rewrites markdown automatically after article or publication-variant mutations.
+2. A VPS cron job runs `ops/articles/sync-markdown-backups.sh` hourly.
+3. The script commits generated markdown and mirrors it to the configured git repository and Google Drive.
 
 Default sync to the current application repository and Google Drive:
 
@@ -268,6 +268,26 @@ rclone config
 ```
 
 The current deploy script does not mount `/opt/backups/articles` directly into the container. By default the API writes to `content/articles`, and the host sync script mirrors that directory into the dedicated article repository.
+
+Hourly cron on the VPS:
+
+```bash
+sudo touch /var/log/article-sync.log
+sudo chown "$USER":"$USER" /var/log/article-sync.log
+crontab -e
+```
+
+Add:
+
+```cron
+0 * * * * cd /opt/apps/personal_page_vue && set -a && . deploy/.env.production && set +a && bash ops/articles/sync-markdown-backups.sh >> /var/log/article-sync.log 2>&1
+```
+
+Check cron output:
+
+```bash
+tail -n 100 /var/log/article-sync.log
+```
 
 ## Privacy Deployment Checklist
 

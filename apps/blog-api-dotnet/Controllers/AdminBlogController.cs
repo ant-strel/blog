@@ -11,10 +11,17 @@ namespace Blog.Api.Controllers;
 public class AdminBlogController : ControllerBase
 {
     private readonly IBlogArticleService _articleService;
+    private readonly IArticleMarkdownExportService _exportService;
+    private readonly ILogger<AdminBlogController> _logger;
 
-    public AdminBlogController(IBlogArticleService articleService)
+    public AdminBlogController(
+        IBlogArticleService articleService,
+        IArticleMarkdownExportService exportService,
+        ILogger<AdminBlogController> logger)
     {
         _articleService = articleService;
+        _exportService = exportService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -40,6 +47,7 @@ public class AdminBlogController : ControllerBase
         try
         {
             var article = await _articleService.CreateAsync(request, cancellationToken);
+            await ExportMarkdownAfterMutationAsync();
             return CreatedAtAction(nameof(GetById), new { id = article.Id }, article);
         }
         catch (InvalidOperationException exception)
@@ -58,6 +66,11 @@ public class AdminBlogController : ControllerBase
         try
         {
             var article = await _articleService.UpdateAsync(id, request, cancellationToken);
+            if (article is not null)
+            {
+                await ExportMarkdownAfterMutationAsync();
+            }
+
             return article is null ? NotFound(new { message = "Article not found." }) : Ok(article);
         }
         catch (InvalidOperationException exception)
@@ -71,6 +84,11 @@ public class AdminBlogController : ControllerBase
     public async Task<IActionResult> Publish([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var article = await _articleService.PublishAsync(id, cancellationToken);
+        if (article is not null)
+        {
+            await ExportMarkdownAfterMutationAsync();
+        }
+
         return article is null ? NotFound(new { message = "Article not found." }) : Ok(article);
     }
 
@@ -79,6 +97,11 @@ public class AdminBlogController : ControllerBase
     public async Task<IActionResult> Archive([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var article = await _articleService.ArchiveAsync(id, cancellationToken);
+        if (article is not null)
+        {
+            await ExportMarkdownAfterMutationAsync();
+        }
+
         return article is null ? NotFound(new { message = "Article not found." }) : Ok(article);
     }
 
@@ -87,6 +110,11 @@ public class AdminBlogController : ControllerBase
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var deleted = await _articleService.DeleteAsync(id, cancellationToken);
+        if (deleted)
+        {
+            await ExportMarkdownAfterMutationAsync();
+        }
+
         return deleted ? NoContent() : NotFound(new { message = "Article not found." });
     }
 
@@ -119,6 +147,11 @@ public class AdminBlogController : ControllerBase
         try
         {
             var variant = await _articleService.CreatePublicationVariantAsync(id, request, cancellationToken);
+            if (variant is not null)
+            {
+                await ExportMarkdownAfterMutationAsync();
+            }
+
             return variant is null
                 ? NotFound(new { message = "Article not found." })
                 : CreatedAtAction(nameof(GetVariant), new { id, variantId = variant.Id }, variant);
@@ -140,6 +173,11 @@ public class AdminBlogController : ControllerBase
         try
         {
             var variant = await _articleService.UpdatePublicationVariantAsync(id, variantId, request, cancellationToken);
+            if (variant is not null)
+            {
+                await ExportMarkdownAfterMutationAsync();
+            }
+
             return variant is null ? NotFound(new { message = "Publication variant not found." }) : Ok(variant);
         }
         catch (InvalidOperationException exception)
@@ -161,6 +199,24 @@ public class AdminBlogController : ControllerBase
             return NotFound(new { message = "Article not found." });
         }
 
-        return deleted.Value ? NoContent() : NotFound(new { message = "Publication variant not found." });
+        if (deleted.Value)
+        {
+            await ExportMarkdownAfterMutationAsync();
+            return NoContent();
+        }
+
+        return NotFound(new { message = "Publication variant not found." });
+    }
+
+    private async Task ExportMarkdownAfterMutationAsync()
+    {
+        try
+        {
+            await _exportService.ExportAllAsync(CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "Article markdown export failed after admin mutation.");
+        }
     }
 }

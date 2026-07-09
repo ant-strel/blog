@@ -43,6 +43,10 @@ public class ArticleMarkdownExportService : IArticleMarkdownExportService
             .OrderBy(article => article.Slug)
             .ToListAsync(cancellationToken);
 
+        DeleteStaleArticleDirectories(
+            rootPath,
+            new HashSet<string>(articles.Select(article => ToSafePathSegment(article.Slug)), StringComparer.Ordinal));
+
         var fileCount = 0;
         foreach (var article in articles)
         {
@@ -173,6 +177,29 @@ public class ArticleMarkdownExportService : IArticleMarkdownExportService
         }
 
         return Path.GetFullPath(_options.RootPath, _environment.ContentRootPath);
+    }
+
+    private static void DeleteStaleArticleDirectories(string rootPath, ISet<string> expectedDirectoryNames)
+    {
+        foreach (var directoryPath in Directory.EnumerateDirectories(rootPath))
+        {
+            var directoryName = Path.GetFileName(directoryPath);
+            if (expectedDirectoryNames.Contains(directoryName))
+            {
+                continue;
+            }
+
+            if (IsManagedArticleDirectory(directoryPath))
+            {
+                Directory.Delete(directoryPath, recursive: true);
+            }
+        }
+    }
+
+    private static bool IsManagedArticleDirectory(string directoryPath)
+    {
+        return File.Exists(Path.Combine(directoryPath, "article.json"))
+            || Directory.EnumerateFiles(directoryPath, "*.md").Any();
     }
 
     private static void DeleteManagedFiles(string articleDirectory)
