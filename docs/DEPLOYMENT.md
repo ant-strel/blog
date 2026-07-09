@@ -289,6 +289,51 @@ Check cron output:
 tail -n 100 /var/log/article-sync.log
 ```
 
+## Article Restore From Markdown Backups
+
+The API restore endpoint reads local markdown files from the configured export root (`content/articles` on the host, `/exports/articles` in `blog-api`). It does not pull from GitHub or Google Drive directly.
+
+Restore from the article git repository:
+
+```bash
+cd /opt/backups/articles
+git pull origin main
+
+cd /opt/apps/personal_page_vue
+rsync -a --delete --exclude '.git/' /opt/backups/articles/ content/articles/
+```
+
+Restore from Google Drive instead:
+
+```bash
+cd /opt/apps/personal_page_vue
+rclone sync gdrive:d-antes/articles content/articles --create-empty-src-dirs
+```
+
+Call the protected import endpoint:
+
+```bash
+cd /opt/apps/personal_page_vue
+sudo apt-get install -y jq
+set -a
+source deploy/.env.production
+set +a
+
+TOKEN="$(
+  curl -s https://d-antes.com/api/auth/login \
+    -H 'Content-Type: application/json' \
+    -d "{\"email\":\"$SEED_EDITOR_EMAIL\",\"password\":\"$SEED_EDITOR_PASSWORD\"}" \
+  | jq -r '.accessToken'
+)"
+
+curl -s https://d-antes.com/api/admin/blog/import/markdown \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"pruneMissing":true}'
+```
+
+`pruneMissing=true` makes the database match the backup set by deleting database articles that are absent from `content/articles`. Use `false` when importing backup articles into an existing database without deleting anything.
+
 ## Privacy Deployment Checklist
 
 The intended current privacy posture is a personal blog without public data collection:

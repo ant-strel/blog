@@ -95,6 +95,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddScoped<IBlogArticleService, BlogArticleService>();
 builder.Services.AddScoped<IArticleMarkdownExportService, ArticleMarkdownExportService>();
+builder.Services.AddScoped<IArticleMarkdownImportService, ArticleMarkdownImportService>();
 builder.Services.AddScoped<IBlogSeeder, BlogSeeder>();
 builder.Services.AddHealthChecks().AddCheck<BlogHealthCheck>("blog-store");
 

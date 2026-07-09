@@ -14,6 +14,8 @@ Current scope:
 - public `GET /api/blog/{slug}`
 - protected `GET/POST/PUT/DELETE /api/admin/blog/articles`
 - protected publish/archive transitions
+- protected `POST /api/admin/blog/export/markdown`
+- protected `POST /api/admin/blog/import/markdown`
 - SQLite by default for local runs
 - PostgreSQL in Docker Compose for persistent deployment storage
 
