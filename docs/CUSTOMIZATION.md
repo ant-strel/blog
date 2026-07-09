@@ -1,5 +1,52 @@
 # Customization Map
 
+> Current customization notes are below. Older notes later in this file may mention removed `ADMIN_DOMAIN`, `ACCOUNT_DOMAIN`, `DASHBOARD_DOMAIN`, `admin-site`, `account-site`, and `dashboard-site` entries.
+
+## Current Single-Domain Setup
+
+Production env file:
+
+```text
+deploy/.env.production
+```
+
+Current domain and SEO variables:
+
+- `PUBLIC_DOMAIN` - public domain handled by host nginx, for example `d-antes.com`.
+- `PUBLIC_BASE_URL` - canonical public URL, for example `https://d-antes.com`.
+- `SITE_NAME` - site name used in SEO metadata.
+- `SEO_DEFAULT_LOCALE` - locale used by server-rendered SEO shell, usually `ru`.
+- `EMAIL` - Let's Encrypt email.
+- `PUBLIC_SITE_PORT` - loopback port on the VPS, default `8080`.
+
+Current editor URL:
+
+```text
+https://d-antes.com/login
+```
+
+After successful login:
+
+```text
+https://d-antes.com/blog
+```
+
+Anonymous users see published articles. Authenticated users see article management inside `/blog`.
+
+Current SEO files:
+
+- `apps/public-site-react/server.mjs` - production server, API proxy, `robots.txt`, dynamic `sitemap.xml`, server SEO shell.
+- `apps/public-site-react/src/components/Seo.tsx` - client-side SEO metadata updates.
+
+Current text/style files:
+
+- `apps/public-site-react/src/content/siteContent.ts` - public site copy.
+- `apps/public-site-react/src/content/editorContent.ts` - editor UI copy.
+- `apps/public-site-react/src/styles.css` - light/dark themes and layout.
+- `apps/public-site-react/src/App.tsx` - language switch and theme switch.
+
+## Archived Notes Below
+
 Документ перечисляет места, где меняются публичные описания сайта, контакты, языки, seed-статьи, домены и служебные значения.
 
 ## Домены, Порты, Креды, Secrets

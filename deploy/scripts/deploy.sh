@@ -19,7 +19,7 @@ sudo ln -sf "$NGINX_OUTPUT" /etc/nginx/sites-enabled/blog-platform.conf
 sudo nginx -t
 sudo systemctl reload nginx
 
-docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/docker-compose.yml" up -d --build
+docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/docker-compose.yml" up -d --build --remove-orphans
 
 sudo certbot --nginx \
   -d "$PUBLIC_DOMAIN" \
