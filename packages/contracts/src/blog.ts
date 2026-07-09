@@ -61,6 +61,13 @@ export interface ArticlePublicationVariantInput {
   notes?: string | null;
 }
 
+export interface MarkdownExportResult {
+  rootPath: string;
+  articleCount: number;
+  fileCount: number;
+  exportedAtUtc: string;
+}
+
 export interface BlogPostQuery {
   page?: number;
   limit?: number;

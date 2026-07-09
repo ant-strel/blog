@@ -145,6 +145,25 @@ docker compose --env-file deploy/.env.production stop postgres-backup
 docker compose --env-file deploy/.env.production rm -f postgres-backup
 ```
 
+### Optional Article Markdown Export
+
+The protected editor can export all blog-localized articles and external publication variants to markdown files.
+
+Docker mounts the export directory here:
+
+```bash
+content/articles
+```
+
+Use the editor button `Export markdown` to write deterministic files, then sync them:
+
+```bash
+ARTICLE_EXPORT_GOOGLE_DRIVE_REMOTE="gdrive:d-antes/articles" \
+  bash ops/articles/sync-markdown-backups.sh
+```
+
+The sync script commits `content/articles` to the current GitHub remote and uses `rclone sync` for Google Drive when `ARTICLE_EXPORT_GOOGLE_DRIVE_REMOTE` is set.
+
 ### Important Current Files
 
 - `apps/public-site-react/server.mjs` - production Node server, API proxy, SEO shell, robots, sitemap.

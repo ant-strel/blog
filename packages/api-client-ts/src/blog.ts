@@ -4,6 +4,7 @@ import type {
   BlogPost,
   BlogPostQuery,
   LocalizedText,
+  MarkdownExportResult,
   PaginatedResult
 } from "@template/contracts";
 
@@ -43,6 +44,7 @@ export interface BlogClient {
     request: ArticlePublicationVariantInput
   ): Promise<ArticlePublicationVariant>;
   deletePublicationVariant(accessToken: string, articleId: string, variantId: string): Promise<void>;
+  exportMarkdown(accessToken: string): Promise<MarkdownExportResult>;
 }
 
 interface PublicArticleListResponse {
@@ -100,6 +102,13 @@ interface ArticlePublicationVariantResponse {
   createdAtUtc: string;
   updatedAtUtc: string;
   publishedAtUtc?: string | null;
+}
+
+interface MarkdownExportResponse {
+  rootPath: string;
+  articleCount: number;
+  fileCount: number;
+  exportedAtUtc: string;
 }
 
 export class ApiBlogClient implements BlogClient {
@@ -281,6 +290,15 @@ export class ApiBlogClient implements BlogClient {
   async deletePublicationVariant(accessToken: string, articleId: string, variantId: string): Promise<void> {
     await this.fetchJson(`/api/admin/blog/articles/${articleId}/variants/${variantId}`, {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+  }
+
+  async exportMarkdown(accessToken: string): Promise<MarkdownExportResult> {
+    return this.fetchJson<MarkdownExportResponse>("/api/admin/blog/export/markdown", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
@@ -523,6 +541,16 @@ export class MockBlogClient implements BlogClient {
     if (index >= 0) {
       mockPublicationVariants.splice(index, 1);
     }
+  }
+
+  async exportMarkdown(accessToken: string): Promise<MarkdownExportResult> {
+    assertMockAuth(accessToken);
+    return {
+      rootPath: "content/articles",
+      articleCount: mockPosts.length,
+      fileCount: mockPosts.length + mockPublicationVariants.length,
+      exportedAtUtc: new Date().toISOString()
+    };
   }
 }
 

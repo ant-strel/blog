@@ -21,6 +21,7 @@ builder.Services.AddApiBehavior();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
+builder.Services.Configure<BlogExportOptions>(builder.Configuration.GetSection(BlogExportOptions.SectionName));
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt settings were not found.");
@@ -93,6 +94,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IBlogArticleService, BlogArticleService>();
+builder.Services.AddScoped<IArticleMarkdownExportService, ArticleMarkdownExportService>();
 builder.Services.AddScoped<IBlogSeeder, BlogSeeder>();
 builder.Services.AddHealthChecks().AddCheck<BlogHealthCheck>("blog-store");
 

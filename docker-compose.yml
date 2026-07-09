@@ -48,6 +48,9 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-TemplateProject.AuthServer}
       Jwt__Audience: ${JWT_AUDIENCE:-TemplateProject.Frontends}
       Jwt__SecretKey: ${JWT_SECRET_KEY:-local-dev-secret-change-me-please-1234567890}
+      BlogExport__RootPath: /exports/articles
+    volumes:
+      - ./content/articles:/exports/articles
     expose:
       - "8080"
     depends_on:

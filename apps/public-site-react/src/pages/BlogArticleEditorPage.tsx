@@ -47,6 +47,7 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
   const [variantExternalUrl, setVariantExternalUrl] = useState("");
   const [variantNotes, setVariantNotes] = useState("");
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +151,7 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
     setStatus(article.status);
     setPublishOnSave(article.status === "published");
     setCopyStatus(null);
+    setExportStatus(null);
     setError(null);
   }
 
@@ -167,6 +169,20 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
     setPublicationVariants([]);
     resetVariantForm();
     setError(null);
+  }
+
+  async function exportMarkdown() {
+    if (!tokens) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await blogClient.exportMarkdown(tokens.accessToken);
+      setExportStatus(`Exported ${result.articleCount} articles / ${result.fileCount} files.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Failed to export markdown.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function resetVariantForm() {
@@ -378,7 +394,12 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
           <div className="eyebrow">{localize(editorContent.articleEditor.eyebrow, locale)}</div>
           <h2>{localize(articleId ? editorContent.articleEditor.editTitle : editorContent.articleEditor.createTitle, locale)}</h2>
         </div>
-        <Link className="btn btn-secondary" to="/blog">{localize(editorContent.articleEditor.backToArticles, locale)}</Link>
+        <div className="form-actions">
+          <button className="btn btn-secondary" type="button" disabled={loading} onClick={() => void exportMarkdown()}>
+            Export markdown
+          </button>
+          <Link className="btn btn-secondary" to="/blog">{localize(editorContent.articleEditor.backToArticles, locale)}</Link>
+        </div>
       </header>
 
       <div className="editor-container">
@@ -408,6 +429,7 @@ export function BlogArticleEditorPage({ locale }: { locale: LocaleCode }) {
 
         <section className="post-editor">
           {loading && <p className="muted">{localize(editorContent.articleEditor.loading, locale)}</p>}
+          {exportStatus && <p className="muted">{exportStatus}</p>}
           <div>
             {status && (
               <p className="muted">
