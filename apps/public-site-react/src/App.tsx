@@ -69,7 +69,7 @@ export default function App() {
             <Route path="/blog/editor/new" element={<BlogArticleEditorPage locale={locale} />} />
             <Route path="/blog/editor/:articleId" element={<BlogArticleEditorPage locale={locale} />} />
             <Route path="/blog/:slug" element={<BlogArticlePage locale={locale} />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<LoginPage />} />
             <Route path="/contact" element={<ContactPage locale={locale} />} />
           </Routes>
         </div>

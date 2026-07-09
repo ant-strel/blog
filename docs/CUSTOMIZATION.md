@@ -22,7 +22,7 @@ Current domain and SEO variables:
 Current editor URL:
 
 ```text
-https://d-antes.com/login
+https://d-antes.com/admin
 ```
 
 After successful login:
@@ -114,8 +114,8 @@ home: {
 
 Создание и редактирование:
 
-- URL: `https://<ADMIN_DOMAIN>/login`
-- после входа: `https://<ADMIN_DOMAIN>/blog`
+- URL: `https://<PUBLIC_DOMAIN>/admin`
+- после входа: `https://<PUBLIC_DOMAIN>/blog`
 
 Поля `title`, `excerpt`, `content` поддерживают языки:
 

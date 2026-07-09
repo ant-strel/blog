@@ -68,7 +68,7 @@ createServer(async (request, response) => {
       return;
     }
 
-    if (pathname === "/login" || pathname.startsWith("/blog/editor")) {
+    if (pathname === "/admin" || pathname.startsWith("/blog/editor")) {
       sendHtml(response, 200, renderShell({
         title: `Editor area | ${siteName}`,
         description: "Protected editorial area.",
@@ -266,7 +266,7 @@ function renderRobots() {
   return [
     "User-agent: *",
     "Allow: /",
-    "Disallow: /login",
+    "Disallow: /admin",
     "Disallow: /blog/editor/",
     "Disallow: /api/",
     "",

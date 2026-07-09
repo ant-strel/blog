@@ -11,7 +11,7 @@
 | Домен, canonical URL, имя сайта для серверного SEO | `deploy/.env.production` | После deploy/restart контейнеров |
 | Название сайта, меню, главная, блог, контакты | `apps/public-site-react/src/content/siteContent.ts` | После rebuild `public-site` |
 | Тексты интерфейса редактора | `apps/public-site-react/src/content/editorContent.ts` | После rebuild `public-site` |
-| Статьи, slug, title, excerpt, content, author, tags, status | Через редактор `/login` -> `/blog` | Сразу после сохранения/публикации |
+| Статьи, slug, title, excerpt, content, author, tags, status | Через редактор `/admin` -> `/blog` | Сразу после сохранения/публикации |
 | Начальные seed-статьи для пустой БД | `apps/blog-api-dotnet/Services/BlogSeeder.cs` | Только если таблица статей пустая |
 | Mock-статьи для фронта без API | `packages/api-client-ts/src/blog.ts` | Только в mock mode |
 | Учётка первого редактора | `deploy/.env.production` (`SEED_EDITOR_*`) | При старте `auth-api`, если пользователь ещё не создан |
@@ -154,7 +154,7 @@ apps/public-site-react/src/content/editorContent.ts
 Основной способ менять статьи:
 
 ```text
-https://d-antes.com/login
+https://d-antes.com/admin
 ```
 
 После входа:

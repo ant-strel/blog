@@ -35,7 +35,7 @@ export function LoginPage() {
       <Seo
         title="Editor sign in | d-antes"
         description="Protected editorial sign-in page."
-        path="/login"
+        path="/admin"
         locale="en"
         noIndex
       />
