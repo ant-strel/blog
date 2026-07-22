@@ -111,6 +111,11 @@ interface MarkdownExportResponse {
   exportedAtUtc: string;
 }
 
+interface StaticArticleIndex {
+  generatedAtUtc: string;
+  items: BlogPost[];
+}
+
 export class ApiBlogClient implements BlogClient {
   constructor(private readonly baseUrl: string) {}
 
@@ -323,6 +328,138 @@ export class ApiBlogClient implements BlogClient {
     }
 
     return (await response.json()) as T;
+  }
+}
+
+export class StaticBlogClient implements BlogClient {
+  private indexPromise?: Promise<StaticArticleIndex>;
+
+  constructor(private readonly contentBasePath = "/articles") {}
+
+  async getPosts(query: BlogPostQuery = {}): Promise<PaginatedResult<BlogPost>> {
+    const index = await this.loadIndex();
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.max(1, query.limit ?? (index.items.length || 1));
+    const normalizedSearch = query.search?.trim().toLowerCase();
+    const normalizedTag = query.tag?.trim().toLowerCase();
+
+    const filtered = index.items.filter((item) => {
+      if (query.publishedOnly !== false && item.status !== "published") {
+        return false;
+      }
+
+      if (normalizedTag && !item.tags.some((tag) => tag.toLowerCase() === normalizedTag)) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return [item.slug, item.author, item.tags.join(" "), ...localizedValues(item.title), ...localizedValues(item.excerpt)]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch);
+    });
+
+    const startIndex = (page - 1) * limit;
+    const items = filtered.slice(startIndex, startIndex + limit);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
+
+    return {
+      items,
+      total: filtered.length,
+      page,
+      limit,
+      totalPages,
+      hasMore: page < totalPages
+    };
+  }
+
+  async getPostBySlug(slug: string): Promise<BlogPost> {
+    const response = await fetch(`${this.trimmedBasePath}/${encodeURIComponent(slug)}.json`);
+    if (!response.ok) {
+      throw new Error("Blog post not found.");
+    }
+
+    const post = (await response.json()) as BlogPost;
+    if (post.status !== "published") {
+      throw new Error("Blog post not found.");
+    }
+
+    return post;
+  }
+
+  async getDrafts(): Promise<BlogPost[]> {
+    throw new Error("Static blog mode does not expose drafts.");
+  }
+
+  async getAdminArticles(): Promise<BlogPost[]> {
+    throw new Error("Static blog mode does not expose admin articles.");
+  }
+
+  async getAdminArticle(): Promise<BlogPost> {
+    throw new Error("Static blog mode does not expose admin articles.");
+  }
+
+  async createAdminArticle(): Promise<BlogPost> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async updateAdminArticle(): Promise<BlogPost> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async publishAdminArticle(): Promise<void> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async archiveAdminArticle(): Promise<void> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async deleteAdminArticle(): Promise<void> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async getPublicationVariants(): Promise<ArticlePublicationVariant[]> {
+    throw new Error("Static blog mode does not expose publication variants.");
+  }
+
+  async getPublicationVariant(): Promise<ArticlePublicationVariant> {
+    throw new Error("Static blog mode does not expose publication variants.");
+  }
+
+  async createPublicationVariant(): Promise<ArticlePublicationVariant> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async updatePublicationVariant(): Promise<ArticlePublicationVariant> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async deletePublicationVariant(): Promise<void> {
+    throw new Error("Static blog mode is read-only.");
+  }
+
+  async exportMarkdown(): Promise<MarkdownExportResult> {
+    throw new Error("Static blog mode cannot export markdown.");
+  }
+
+  private async loadIndex(): Promise<StaticArticleIndex> {
+    this.indexPromise ??= fetch(`${this.trimmedBasePath}/index.json`).then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to load static article index: ${response.status}`);
+      }
+
+      return (await response.json()) as StaticArticleIndex;
+    });
+
+    return this.indexPromise;
+  }
+
+  private get trimmedBasePath(): string {
+    return this.contentBasePath.replace(/\/+$/, "");
   }
 }
 
@@ -601,6 +738,14 @@ function mapPublicationVariant(item: ArticlePublicationVariantResponse): Article
     updatedAtUtc: item.updatedAtUtc,
     publishedAtUtc: item.publishedAtUtc
   };
+}
+
+function localizedValues(input: string | LocalizedText): string[] {
+  if (typeof input === "string") {
+    return [input];
+  }
+
+  return Object.values(input).filter((value): value is string => Boolean(value));
 }
 
 const mockPublicationVariants: ArticlePublicationVariant[] = [];

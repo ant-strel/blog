@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import type { LocaleCode } from "@template/contracts";
 import { Seo } from "../components/Seo";
+import { MarkdownContent } from "../components/MarkdownContent";
 import { useBlogArticle } from "../hooks/useBlog";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
@@ -64,14 +65,7 @@ export function BlogArticlePage({ locale }: { locale: LocaleCode }) {
           ))}
         </div>
       )}
-      <div className="article-body">
-        {localize(post.content, locale)
-          .split("\n")
-          .filter(Boolean)
-          .map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
-      </div>
+      <MarkdownContent content={localize(post.content, locale)} />
       <footer className="article-footer">
         <Link className="btn btn-text" to="/blog">
           {localize(siteContent.article.backToAllPosts, locale)}

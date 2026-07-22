@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json && vite build"
+    "generate:static-blog": "node scripts/generate-static-blog.mjs",
+    "prerender:static-blog": "node scripts/prerender-static-blog.mjs",
+    "build": "npm run generate:static-blog && tsc -p tsconfig.json && vite build && npm run prerender:static-blog"
   },
   "dependencies": {
     "@template/api-client-ts": "0.1.0",

@@ -11,6 +11,8 @@ interface AuthContextValue {
 }
 
 const authClient = createAuthClient();
+const authDisabled = import.meta.env.VITE_AUTH_MODE === "disabled"
+  || (import.meta.env.VITE_BLOG_MODE ?? "static") === "static";
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -19,6 +21,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (authDisabled) {
+      setReady(true);
+      return;
+    }
+
     let cancelled = false;
     authClient.refresh().then(async (nextTokens) => {
       const nextUser = await authClient.me(nextTokens.accessToken);
@@ -45,6 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokens,
         ready,
         async login(request) {
+          if (authDisabled) {
+            throw new Error("Authentication is disabled for this static build.");
+          }
+
           const nextTokens = await authClient.login(request);
           const nextUser = await authClient.me(nextTokens.accessToken);
           setTokens(nextTokens);

@@ -79,6 +79,8 @@ Optional Postgres backup variables are already present in `deploy/.env.productio
 
 Optional article markdown sync variables are also present in `deploy/.env.production.example`. They are used by `ops/articles/sync-markdown-backups.sh`, not by Docker Compose.
 
+Optional article markdown restore variables are used by `ops/articles/restore-markdown-backups.sh`. They are not run by `deploy.sh` automatically because restore can use `rsync --delete` and must not overwrite fresh production editor output accidentally.
+
 ## Initial VPS Setup
 
 Run this once on a clean Ubuntu VPS:
@@ -296,18 +298,28 @@ The API restore endpoint reads local markdown files from the configured export r
 Restore from the article git repository:
 
 ```bash
-cd /opt/backups/articles
-git pull origin main
-
 cd /opt/apps/personal_page_vue
-rsync -a --delete --exclude '.git/' /opt/backups/articles/ content/articles/
+set -a
+source deploy/.env.production
+set +a
+
+ARTICLE_RESTORE_SOURCE=git \
+ARTICLE_RESTORE_REPO_DIR="/opt/backups/articles" \
+ARTICLE_RESTORE_GIT_URL="git@github.com:USER/articles-backup.git" \
+  bash ops/articles/restore-markdown-backups.sh
 ```
 
 Restore from Google Drive instead:
 
 ```bash
 cd /opt/apps/personal_page_vue
-rclone sync gdrive:d-antes/articles content/articles --create-empty-src-dirs
+set -a
+source deploy/.env.production
+set +a
+
+ARTICLE_RESTORE_SOURCE=drive \
+ARTICLE_RESTORE_GOOGLE_DRIVE_REMOTE="gdrive:d-antes/articles" \
+  bash ops/articles/restore-markdown-backups.sh
 ```
 
 Call the protected import endpoint:
@@ -333,6 +345,49 @@ curl -s https://d-antes.com/api/admin/blog/import/markdown \
 ```
 
 `pruneMissing=true` makes the database match the backup set by deleting database articles that are absent from `content/articles`. Use `false` when importing backup articles into an existing database without deleting anything.
+
+## Static Site And Mirror Deploy
+
+The normal Docker deploy above keeps `public-site` in API mode. It does not build a GitHub Pages mirror and it does not pull article markdown backups before deployment.
+
+For a static public build or mirror, restore article markdown first, then build `public-site` in static mode:
+
+```bash
+cd /opt/apps/personal_page_vue
+git pull origin static_site
+
+set -a
+source deploy/.env.production
+set +a
+
+bash ops/articles/restore-markdown-backups.sh
+
+VITE_BLOG_MODE=static \
+VITE_AUTH_MODE=disabled \
+VITE_PUBLIC_BASE_URL=https://d-antes.com \
+VITE_CANONICAL_BASE_URL=https://d-antes.com \
+VITE_ROBOTS_MODE=index-follow \
+  npm run build --workspace @template/public-site-react
+```
+
+For a GitHub Pages mirror:
+
+```bash
+VITE_BLOG_MODE=static \
+VITE_AUTH_MODE=disabled \
+VITE_PUBLIC_BASE_URL=https://d-antes.github.io \
+VITE_CANONICAL_BASE_URL=https://d-antes.com \
+VITE_ROBOTS_MODE=noindex-follow \
+  npm run build --workspace @template/public-site-react
+```
+
+The generated static artifact is:
+
+```text
+apps/public-site-react/dist
+```
+
+That directory contains prerendered blog HTML, static article JSON, `sitemap.xml`, `robots.txt`, and `rss.xml`. Publish that directory to GitHub Pages, nginx static hosting, S3/CDN, or another mirror target.
 
 ## Privacy Deployment Checklist
 
@@ -385,6 +440,7 @@ If certificate issuance fails:
 - `deploy/scripts/deploy.sh` - production deploy/update script.
 - `deploy/nginx/blog-platform.conf.template` - single-domain host nginx template.
 - `ops/articles/sync-markdown-backups.sh` - markdown export backup sync.
+- `ops/articles/restore-markdown-backups.sh` - explicit markdown restore from Git or Google Drive.
 - `ops/postgres/backup/pg-backup.sh` - Postgres backup loop.
 - `ops/postgres/backup/restore-from-backup.sh` - Postgres restore helper.
 - `apps/public-site-react/server.mjs` - production Node server, API proxy, SEO shell, robots, sitemap.

@@ -227,15 +227,19 @@ Restore markdown files from the article GitHub repository:
 ```bash
 sudo mkdir -p /opt/backups
 sudo chown "$USER":"$USER" /opt/backups
-git clone git@github.com:ant-strel/articles.git /opt/backups/articles
-rsync -a --delete --exclude '.git/' /opt/backups/articles/ /opt/apps/personal_page_vue/content/articles/
+ARTICLE_RESTORE_SOURCE=git \
+ARTICLE_RESTORE_REPO_DIR=/opt/backups/articles \
+ARTICLE_RESTORE_GIT_URL=git@github.com:ant-strel/articles.git \
+  bash ops/articles/restore-markdown-backups.sh
 ```
 
 Or restore markdown files from Google Drive:
 
 ```bash
 cd /opt/apps/personal_page_vue
-rclone sync gdrive:d-antes/articles content/articles --create-empty-src-dirs
+ARTICLE_RESTORE_SOURCE=drive \
+ARTICLE_RESTORE_GOOGLE_DRIVE_REMOTE=gdrive:d-antes/articles \
+  bash ops/articles/restore-markdown-backups.sh
 ```
 
 Call the protected import endpoint:

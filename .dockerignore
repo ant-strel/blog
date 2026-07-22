@@ -1,5 +1,6 @@
 node_modules/
 apps/*/dist/
+apps/public-site-react/public/articles/
 apps/*/bin/
 apps/*/obj/
 .git/
