@@ -36,6 +36,18 @@ const articles = index.items.map((summary) => {
 });
 
 writePage(isGithubPagesBuild ? "index.html" : "blog/index.html", renderBlogIndexPage(articles));
+if (isGithubPagesBuild) {
+  writePage("about/index.html", renderStaticRoutePage({
+    title: `About | ${siteName}`,
+    description: "About d-antes and the topics covered by this blog.",
+    path: "/"
+  }));
+  writePage("contact/index.html", renderStaticRoutePage({
+    title: `Contacts | ${siteName}`,
+    description: "Ways to get in touch with d-antes.",
+    path: "/contact"
+  }));
+}
 for (const article of articles) {
   writePage(isGithubPagesBuild ? `${article.slug}/index.html` : `blog/${article.slug}/index.html`, renderArticlePage(article));
 }
@@ -136,6 +148,22 @@ function renderArticlePage(article) {
   });
 }
 
+function renderStaticRoutePage({ title, description, path: pagePath }) {
+  return renderShell({
+    title,
+    description,
+    path: pagePath,
+    type: "website",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: title,
+      url: canonicalUrl(pagePath)
+    },
+    content: ""
+  });
+}
+
 function renderShell({ title, description, path: pagePath, type, article, structuredData, content }) {
   const canonical = canonicalUrl(pagePath);
   const head = [
@@ -196,7 +224,16 @@ function renderTags(tags) {
 }
 
 function writeSitemap(items) {
-  const urls = [
+  const urls = isGithubPagesBuild ? [
+    { loc: publicUrl("/"), priority: "0.9" },
+    { loc: publicUrl("/about"), priority: "0.7" },
+    { loc: publicUrl("/contact"), priority: "0.4" },
+    ...items.map((article) => ({
+      loc: publicUrl(articlePublicPath(article.slug)),
+      lastmod: article.updatedAtUtc,
+      priority: "0.7"
+    }))
+  ] : [
     { loc: publicUrl("/"), priority: "0.8" },
     { loc: publicUrl("/blog"), priority: "0.9" },
     { loc: publicUrl("/contact"), priority: "0.4" },
@@ -223,8 +260,8 @@ function writeRss(items) {
   const channelItems = items.map((article) => `
     <item>
       <title>${escapeXml(localize(article.title))}</title>
-      <link>${escapeXml(publicUrl(`/blog/${article.slug}`))}</link>
-      <guid isPermaLink="true">${escapeXml(publicUrl(`/blog/${article.slug}`))}</guid>
+      <link>${escapeXml(publicUrl(articlePublicPath(article.slug)))}</link>
+      <guid isPermaLink="true">${escapeXml(publicUrl(articlePublicPath(article.slug)))}</guid>
       <description>${escapeXml(localize(article.excerpt))}</description>
       <pubDate>${new Date(article.publishedAtUtc).toUTCString()}</pubDate>
     </item>`).join("");

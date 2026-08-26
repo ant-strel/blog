@@ -5,6 +5,7 @@ export interface SiteContent {
   footerText: LocalizedText;
   nav: {
     home: LocalizedText;
+    about: LocalizedText;
     blog: LocalizedText;
     contact: LocalizedText;
   };
@@ -59,6 +60,11 @@ export const siteContent: SiteContent = {
       en: "Home",
       ru: "Главная",
       es: "Inicio"
+    },
+    about: {
+      en: "About",
+      ru: "Обо мне",
+      es: "Acerca de"
     },
     blog: {
       en: "Blog",

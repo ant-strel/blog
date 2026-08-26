@@ -3,6 +3,7 @@ import type { LocaleCode, LocalizedText } from "@template/contracts";
 import { Seo } from "../components/Seo";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
+import { blogIndexPath } from "../lib/blogRoutes";
 
 export function HomePage({ locale }: { locale: LocaleCode }) {
   return (
@@ -19,7 +20,7 @@ export function HomePage({ locale }: { locale: LocaleCode }) {
         <h1>{localize(siteContent.home.title, locale)}</h1>
         <p>{localize(siteContent.home.subtitle, locale)}</p>
         <div className="home-actions">
-          <Link className="btn btn-primary" to="/blog">
+          <Link className="btn btn-primary" to={blogIndexPath}>
             {localize(siteContent.home.blogCta, locale)}
           </Link>
           <Link className="btn btn-outline" to="/contact">

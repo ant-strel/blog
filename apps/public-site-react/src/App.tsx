@@ -34,7 +34,11 @@ export default function App() {
           </Link>
           <nav className="public-nav">
             {isGithubPagesBuild ? (
-              <Link to="/">{localize(siteContent.nav.blog, locale)}</Link>
+              <>
+                <Link to="/about">{localize(siteContent.nav.about, locale)}</Link>
+                <Link to="/">{localize(siteContent.nav.blog, locale)}</Link>
+                <Link to="/contact">{localize(siteContent.nav.contact, locale)}</Link>
+              </>
             ) : (
               <>
                 <Link to="/">{localize(siteContent.nav.home, locale)}</Link>
@@ -74,6 +78,8 @@ export default function App() {
             {isGithubPagesBuild ? (
               <>
                 <Route path="/" element={<BlogIndexPage locale={locale} />} />
+                <Route path="/about" element={<HomePage locale={locale} />} />
+                <Route path="/contact" element={<ContactPage locale={locale} />} />
                 <Route path="/:slug" element={<BlogArticlePage locale={locale} />} />
               </>
             ) : (
