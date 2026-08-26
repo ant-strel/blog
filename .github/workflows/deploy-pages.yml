@@ -35,9 +35,9 @@ jobs:
           VITE_BLOG_MODE: static
           VITE_AUTH_MODE: disabled
           VITE_GITHUB_PAGES: "true"
-          VITE_SITE_BASE_PATH: /blog/
-          VITE_STATIC_ARTICLES_BASE_PATH: /blog/articles
-          VITE_PUBLIC_BASE_URL: https://ant-strel.github.io/blog
+          VITE_SITE_BASE_PATH: /
+          VITE_STATIC_ARTICLES_BASE_PATH: /articles
+          VITE_PUBLIC_BASE_URL: https://blog.d-antes.com
           VITE_CANONICAL_BASE_URL: https://d-antes.com
           VITE_ROBOTS_MODE: noindex-follow
         run: npm run build --workspace @template/public-site-react
