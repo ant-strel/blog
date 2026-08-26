@@ -7,6 +7,7 @@ import { BlogArticlesPage } from "./BlogArticlesPage";
 import { Seo } from "../components/Seo";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
+import { blogArticlePath } from "../lib/blogRoutes";
 
 export function BlogIndexPage({ locale }: { locale: LocaleCode }) {
   const { ready, tokens } = useAuth();
@@ -80,7 +81,7 @@ function PublicBlogIndex({ locale }: { locale: LocaleCode }) {
             {data.items.map((post) => (
               <article className="blog-post" key={post.id}>
                 <h2 className="post-title">
-                  <Link to={`/blog/${post.slug}`}>{localize(post.title, locale)}</Link>
+                  <Link to={blogArticlePath(post.slug)}>{localize(post.title, locale)}</Link>
                 </h2>
                 <div className="post-meta">
                   {new Date(post.publishedAtUtc).toLocaleDateString()}
@@ -92,7 +93,7 @@ function PublicBlogIndex({ locale }: { locale: LocaleCode }) {
                   <p>{localize(post.excerpt, locale)}</p>
                 </div>
                 <footer className="post-footer">
-                  <Link className="btn btn-text" to={`/blog/${post.slug}`}>
+                  <Link className="btn btn-text" to={blogArticlePath(post.slug)}>
                     {localize(siteContent.blog.continueReading, locale)}
                   </Link>
                 </footer>

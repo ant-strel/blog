@@ -20,6 +20,7 @@ const publicBaseUrl = trimTrailingSlash(process.env.VITE_PUBLIC_BASE_URL ?? "htt
 const canonicalBaseUrl = trimTrailingSlash(process.env.VITE_CANONICAL_BASE_URL ?? publicBaseUrl);
 const robotsMode = process.env.VITE_ROBOTS_MODE ?? "index-follow";
 const shouldNoIndex = robotsMode === "noindex-follow";
+const isGithubPagesBuild = process.env.VITE_GITHUB_PAGES === "true";
 
 if (!fs.existsSync(templatePath)) {
   throw new Error(`Vite index.html not found: ${templatePath}`);
@@ -34,9 +35,9 @@ const articles = index.items.map((summary) => {
   return JSON.parse(fs.readFileSync(articlePath, "utf8"));
 });
 
-writePage("blog/index.html", renderBlogIndexPage(articles));
+writePage(isGithubPagesBuild ? "index.html" : "blog/index.html", renderBlogIndexPage(articles));
 for (const article of articles) {
-  writePage(`blog/${article.slug}/index.html`, renderArticlePage(article));
+  writePage(isGithubPagesBuild ? `${article.slug}/index.html` : `blog/${article.slug}/index.html`, renderArticlePage(article));
 }
 
 writeSitemap(articles);
@@ -101,7 +102,7 @@ function renderArticlePage(article) {
           ${renderTags(article.tags)}
           <div class="article-body">${markdownToHtml(localize(article.content))}</div>
           <footer class="article-footer">
-            <a class="btn btn-text" href="/blog">Back to all posts</a>
+            <a class="btn btn-text" href="${publicPath(blogPublicPath())}">Back to all posts</a>
           </footer>
         </article>
       </div>
@@ -151,7 +152,7 @@ function renderShell({ title, description, path: pagePath, type, article, struct
     `<meta name="twitter:card" content="summary">`,
     `<meta name="twitter:title" content="${escapeAttribute(title)}">`,
     `<meta name="twitter:description" content="${escapeAttribute(description)}">`,
-    `<link rel="alternate" type="application/rss+xml" title="${escapeAttribute(siteName)}" href="/rss.xml">`,
+    `<link rel="alternate" type="application/rss+xml" title="${escapeAttribute(siteName)}" href="${publicPath("/rss.xml")}">`,
     themeBootScript()
   ];
 
@@ -179,10 +180,10 @@ function renderShell({ title, description, path: pagePath, type, article, struct
 function renderArticleCard(article) {
   return `
     <article class="blog-post">
-      <h2 class="post-title"><a href="/blog/${escapeAttribute(article.slug)}">${escapeHtml(localize(article.title))}</a></h2>
+      <h2 class="post-title"><a href="${publicPath(articlePublicPath(article.slug))}">${escapeHtml(localize(article.title))}</a></h2>
       <div class="post-meta">${formatDate(article.publishedAtUtc)}${article.tags.length > 0 ? ` | Tags: ${escapeHtml(article.tags.join(", "))}` : ""}</div>
       <div class="post-content"><p>${escapeHtml(localize(article.excerpt))}</p></div>
-      <footer class="post-footer"><a class="btn btn-text" href="/blog/${escapeAttribute(article.slug)}">Continue reading</a></footer>
+      <footer class="post-footer"><a class="btn btn-text" href="${publicPath(articlePublicPath(article.slug))}">Continue reading</a></footer>
     </article>`;
 }
 
@@ -282,6 +283,18 @@ function canonicalUrl(relativePath) {
 
 function publicUrl(relativePath) {
   return `${publicBaseUrl}${normalizePath(relativePath)}`;
+}
+
+function publicPath(relativePath) {
+  return new URL(publicUrl(relativePath)).pathname;
+}
+
+function blogPublicPath() {
+  return isGithubPagesBuild ? "/" : "/blog";
+}
+
+function articlePublicPath(slug) {
+  return isGithubPagesBuild ? `/${slug}` : `/blog/${slug}`;
 }
 
 function normalizePath(value) {

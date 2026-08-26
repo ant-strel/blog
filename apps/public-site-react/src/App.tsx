@@ -10,6 +10,7 @@ import { ContactPage } from "./pages/ContactPage";
 import { editorContent } from "./content/editorContent";
 import { siteContent } from "./content/siteContent";
 import { localize } from "./lib/localize";
+import { isGithubPagesBuild } from "./lib/blogRoutes";
 import { useAuth } from "./state/AuthProvider";
 
 export default function App() {
@@ -32,9 +33,15 @@ export default function App() {
             {siteContent.brandName}
           </Link>
           <nav className="public-nav">
-            <Link to="/">{localize(siteContent.nav.home, locale)}</Link>
-            <Link to="/blog">{localize(siteContent.nav.blog, locale)}</Link>
-            <Link to="/contact">{localize(siteContent.nav.contact, locale)}</Link>
+            {isGithubPagesBuild ? (
+              <Link to="/">{localize(siteContent.nav.blog, locale)}</Link>
+            ) : (
+              <>
+                <Link to="/">{localize(siteContent.nav.home, locale)}</Link>
+                <Link to="/blog">{localize(siteContent.nav.blog, locale)}</Link>
+                <Link to="/contact">{localize(siteContent.nav.contact, locale)}</Link>
+              </>
+            )}
             {ready && tokens && (
               <button className="nav-button" type="button" onClick={() => void logout()}>
                 {localize(editorContent.articleList.signOut, locale)}
@@ -64,13 +71,22 @@ export default function App() {
       <main className="public-main">
         <div className="public-container">
           <Routes>
-            <Route path="/" element={<HomePage locale={locale} />} />
-            <Route path="/blog" element={<BlogIndexPage locale={locale} />} />
-            <Route path="/blog/editor/new" element={<BlogArticleEditorPage locale={locale} />} />
-            <Route path="/blog/editor/:articleId" element={<BlogArticleEditorPage locale={locale} />} />
-            <Route path="/blog/:slug" element={<BlogArticlePage locale={locale} />} />
-            <Route path="/admin" element={<LoginPage />} />
-            <Route path="/contact" element={<ContactPage locale={locale} />} />
+            {isGithubPagesBuild ? (
+              <>
+                <Route path="/" element={<BlogIndexPage locale={locale} />} />
+                <Route path="/:slug" element={<BlogArticlePage locale={locale} />} />
+              </>
+            ) : (
+              <>
+                <Route path="/" element={<HomePage locale={locale} />} />
+                <Route path="/blog" element={<BlogIndexPage locale={locale} />} />
+                <Route path="/blog/editor/new" element={<BlogArticleEditorPage locale={locale} />} />
+                <Route path="/blog/editor/:articleId" element={<BlogArticleEditorPage locale={locale} />} />
+                <Route path="/blog/:slug" element={<BlogArticlePage locale={locale} />} />
+                <Route path="/admin" element={<LoginPage />} />
+                <Route path="/contact" element={<ContactPage locale={locale} />} />
+              </>
+            )}
           </Routes>
         </div>
       </main>

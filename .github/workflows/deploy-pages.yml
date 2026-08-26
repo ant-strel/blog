@@ -1,0 +1,59 @@
+name: Deploy blog to GitHub Pages
+
+on:
+  push:
+    branches: [static_site]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static blog
+        env:
+          VITE_BLOG_MODE: static
+          VITE_AUTH_MODE: disabled
+          VITE_GITHUB_PAGES: "true"
+          VITE_SITE_BASE_PATH: /blog/
+          VITE_STATIC_ARTICLES_BASE_PATH: /blog/articles
+          VITE_PUBLIC_BASE_URL: https://ant-strel.github.io/blog
+          VITE_CANONICAL_BASE_URL: https://d-antes.com
+          VITE_ROBOTS_MODE: noindex-follow
+        run: npm run build --workspace @template/public-site-react
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/public-site-react/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

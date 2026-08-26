@@ -66,9 +66,9 @@ export function Seo({
 }
 
 function absoluteUrl(path: string): string {
-  const configuredBase = import.meta.env.VITE_PUBLIC_BASE_URL as string | undefined;
+  const configuredBase = (import.meta.env.VITE_CANONICAL_BASE_URL ?? import.meta.env.VITE_PUBLIC_BASE_URL) as string | undefined;
   const baseUrl = configuredBase?.trim() || window.location.origin;
-  return new URL(path, `${baseUrl.replace(/\/+$/, "")}/`).toString();
+  return new URL(path.replace(/^\/+/, ""), `${baseUrl.replace(/\/+$/, "")}/`).toString();
 }
 
 function upsertMeta(attribute: "name" | "property", key: string, content: string) {

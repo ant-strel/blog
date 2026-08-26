@@ -5,6 +5,7 @@ import { MarkdownContent } from "../components/MarkdownContent";
 import { useBlogArticle } from "../hooks/useBlog";
 import { siteContent } from "../content/siteContent";
 import { localize } from "../lib/localize";
+import { blogIndexPath } from "../lib/blogRoutes";
 
 export function BlogArticlePage({ locale }: { locale: LocaleCode }) {
   const { slug } = useParams();
@@ -18,7 +19,7 @@ export function BlogArticlePage({ locale }: { locale: LocaleCode }) {
     return (
       <section className="feedback-card">
         <p className="error-text">{error ?? localize(siteContent.article.notFound, locale)}</p>
-        <Link className="btn btn-outline" to="/blog">
+        <Link className="btn btn-outline" to={blogIndexPath}>
           {localize(siteContent.article.backToBlog, locale)}
         </Link>
       </section>
@@ -67,7 +68,7 @@ export function BlogArticlePage({ locale }: { locale: LocaleCode }) {
       )}
       <MarkdownContent content={localize(post.content, locale)} />
       <footer className="article-footer">
-        <Link className="btn btn-text" to="/blog">
+        <Link className="btn btn-text" to={blogIndexPath}>
           {localize(siteContent.article.backToAllPosts, locale)}
         </Link>
       </footer>
