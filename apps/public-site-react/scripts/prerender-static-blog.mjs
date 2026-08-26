@@ -197,12 +197,33 @@ function renderShell({ title, description, path: pagePath, type, article, struct
   }
 
   head.push(`<script type="application/ld+json">${escapeScriptJson(structuredData)}</script>`);
+  const pageContent = isGithubPagesBuild
+    ? `${renderStaticHeader()}${content}${renderStaticFooter()}`
+    : content;
 
   return template
     .replace(/<html([^>]*)>/, `<html$1 data-theme="light">`)
     .replace(/<title>.*?<\/title>/s, "")
     .replace("</head>", `  ${head.join("\n    ")}\n  </head>`)
-    .replace('<div id="root"></div>', `<div id="root">${content}</div>`);
+    .replace('<div id="root"></div>', `<div id="root">${pageContent}</div>`);
+}
+
+function renderStaticHeader() {
+  return `
+    <header class="public-header">
+      <div class="public-container header-inner">
+        <a class="logo" href="${publicPath("/")}">${escapeHtml(siteName)}</a>
+        <nav class="public-nav">
+          <a href="${publicPath("/about")}">About</a>
+          <a href="${publicPath("/")}">Blog</a>
+          <a href="${publicPath("/contact")}">Contacts</a>
+        </nav>
+      </div>
+    </header>`;
+}
+
+function renderStaticFooter() {
+  return `<footer class="public-footer"><div class="public-container">(c) 2026 ${escapeHtml(siteName)}.</div></footer>`;
 }
 
 function renderArticleCard(article) {
