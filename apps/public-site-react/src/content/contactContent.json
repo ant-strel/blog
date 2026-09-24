@@ -1,0 +1,63 @@
+{
+  "title": { "en": "Contacts", "ru": "Контакты", "es": "Contacto" },
+  "subtitle": {
+    "en": "Anton Strelnikov — full-stack .NET and Windows desktop developer. Background, technologies and contact links.",
+    "ru": "Антон Стрельников — full-stack .NET и Windows-разработчик. Опыт, технологии и контакты.",
+    "es": "Anton Strelnikov — desarrollador full-stack .NET y de aplicaciones de escritorio para Windows. Perfil, tecnologías y contacto."
+  },
+  "otherWaysTitle": { "en": "Get in touch", "ru": "Связаться со мной", "es": "Ponte en contacto" },
+  "resume": {
+    "eyebrow": { "en": "About me", "ru": "Обо мне", "es": "Sobre mí" },
+    "name": { "en": "Anton Strelnikov", "ru": "Антон Стрельников", "es": "Anton Strelnikov" },
+    "role": {
+      "en": "Full-stack .NET & Windows Desktop Engineer",
+      "ru": "Full-stack .NET и Windows-разработчик",
+      "es": "Desarrollador full-stack .NET y de escritorio para Windows"
+    },
+    "paragraphs": [
+      {
+        "ru": "Разрабатываю приложения и фоновые агенты для Windows на C#/.NET. Основные задачи — системы реального времени, endpoint-продукты и мультимедиа: захват экрана и звука, работа с видео, камерами и потоками, офлайн-распознавание речи. Работаю с WPF и WinAPI, WebRTC, RTSP/ONVIF, FFmpeg и Vosk.",
+        "en": "I build Windows applications and background agents in C#/.NET, mainly for real-time systems, endpoint products and multimedia. My work includes screen and audio capture, video streams, cameras and offline speech recognition, using WPF, WinAPI, WebRTC, RTSP/ONVIF, FFmpeg and Vosk.",
+        "es": "Desarrollo aplicaciones y agentes en segundo plano para Windows con C#/.NET, principalmente para sistemas en tiempo real, productos para endpoints y multimedia. Trabajo con captura de pantalla y audio, vídeo, cámaras y reconocimiento de voz sin conexión, usando WPF, WinAPI, WebRTC, RTSP/ONVIF, FFmpeg y Vosk."
+      },
+      {
+        "ru": "Также пишу веб-приложения на React/TypeScript и ASP.NET Core: API, JWT-аутентификация, работа с PostgreSQL. Настраиваю Docker-инфраструктуру и развёртывание на Linux VPS. Беру на себя весь путь от интеграции с Windows и интерфейса до серверной части, инсталлятора, обновлений и поддержки в эксплуатации.",
+        "en": "I also build web applications with React/TypeScript and ASP.NET Core, including APIs, JWT authentication and PostgreSQL. I set up Docker infrastructure and deployment on Linux VPS servers. I work across the full application lifecycle: Windows integration, UI, backend, installers, updates and maintenance after release.",
+        "es": "También desarrollo aplicaciones web con React/TypeScript y ASP.NET Core: API, autenticación JWT y PostgreSQL. Configuro la infraestructura con Docker y el despliegue en servidores VPS con Linux. Me ocupo del ciclo completo: integración con Windows, interfaz, backend, instaladores, actualizaciones y mantenimiento tras el lanzamiento."
+      }
+    ],
+    "skillsTitle": { "en": "Technologies I work with", "ru": "С чем работаю", "es": "Tecnologías con las que trabajo" },
+    "skills": [
+      {
+        "label": { "en": "C# / .NET", "ru": "C# / .NET", "es": "C# / .NET" },
+        "text": { "en": ".NET Framework, .NET 9, ASP.NET Core, EF Core, WPF, WinForms, C++/CLI.", "ru": ".NET Framework, .NET 9, ASP.NET Core, EF Core, WPF, WinForms, C++/CLI.", "es": ".NET Framework, .NET 9, ASP.NET Core, EF Core, WPF, WinForms, C++/CLI." }
+      },
+      {
+        "label": { "en": "Web", "ru": "Веб", "es": "Web" },
+        "text": { "en": "React, TypeScript, Vite, REST API, JWT, PostgreSQL.", "ru": "React, TypeScript, Vite, REST API, JWT, PostgreSQL.", "es": "React, TypeScript, Vite, REST API, JWT, PostgreSQL." }
+      },
+      {
+        "label": { "en": "Real-time & media", "ru": "Реальное время и мультимедиа", "es": "Tiempo real y multimedia" },
+        "text": { "en": "WebRTC, WebSocket, RTSP, ONVIF, FFmpeg, Vosk, OCR, screen, audio and video capture.", "ru": "WebRTC, WebSocket, RTSP, ONVIF, FFmpeg, Vosk, OCR, захват экрана, аудио и видео.", "es": "WebRTC, WebSocket, RTSP, ONVIF, FFmpeg, Vosk, OCR, captura de pantalla, audio y vídeo." }
+      },
+      {
+        "label": { "en": "Deployment & distribution", "ru": "Развёртывание и доставка", "es": "Despliegue y distribución" },
+        "text": { "en": "Docker Compose, Nginx, Let’s Encrypt, Linux VPS, WiX / MSI / Burn, Git.", "ru": "Docker Compose, Nginx, Let’s Encrypt, Linux VPS, WiX / MSI / Burn, Git.", "es": "Docker Compose, Nginx, Let’s Encrypt, Linux VPS, WiX / MSI / Burn, Git." }
+      },
+      {
+        "label": { "en": "Windows & native integration", "ru": "Windows и native-интеграции", "es": "Windows e integración nativa" },
+        "text": { "en": "WinAPI, WMI, Registry, COM/DirectShow, IPC, native DLLs, C++.", "ru": "WinAPI, WMI, Registry, COM/DirectShow, IPC, native DLL, C++.", "es": "WinAPI, WMI, Registry, COM/DirectShow, IPC, DLL nativas, C++." }
+      },
+      {
+        "label": { "en": "Also used", "ru": "Также работаю с", "es": "Otras herramientas" },
+        "text": { "en": "Rust, Flutter, CMake.", "ru": "Rust, Flutter, CMake.", "es": "Rust, Flutter, CMake." }
+      }
+    ]
+  },
+  "methods": [
+    { "label": "Email", "value": "ant.strel.2016@gmail.com", "href": "mailto:ant.strel.2016@gmail.com" },
+    { "label": "GitHub", "value": "github.com/ant-strel", "href": "https://github.com/ant-strel" },
+    { "label": "LinkedIn", "value": "linkedin.com/in/anton-strelnikov", "href": "https://www.linkedin.com/in/anton-strelnikov" },
+    { "label": "Telegram", "value": "t.me/ant_str", "href": "https://t.me/ant_str" }
+  ]
+}
